@@ -38,3 +38,8 @@
 .mascot.m4 { -webkit-animation-duration: 1.45s; animation-duration: 1.45s; -webkit-animation-delay: .45s; animation-delay: .45s; }
 .jwave { display: inline-block; -webkit-animation: jwave 1.5s ease-in-out infinite; animation: jwave 1.5s ease-in-out infinite; }
 .jpulse { display: inline-block; -webkit-animation: jpulse 1.4s ease-in-out infinite; animation: jpulse 1.4s ease-in-out infinite; }
+
+.anim-stage { text-align: center; padding: 4px 0 2px; }
+.anim-stage .mascot, .anim-stage .imgspan { width: 52px; height: 52px; vertical-align: bottom; margin: 0 5px; }
+.anim-stage .mascot svg, .anim-stage .imgspan svg { width: 100%; height: 100%; }
+.gcast { margin: 2px 0 4px; }

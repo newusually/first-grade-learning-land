@@ -8,13 +8,16 @@
   function $(id) { return document.getElementById(id); }
   var topics = (App.Social && App.Social.topics) || [];
   var box = $("topicBox");
+  var CAST = { bully: ["boy", "bear"], friend: ["girl", "rabbit"], study: ["kid", "cat"], manners: ["teacher", "panda"], sharing: ["girl", "monkey"], calm: ["boy", "frog"], body: ["girl", "rabbit"], respect: ["teacher", "bear"], sos: ["kid", "dog"] };
   if (!box) return;
   var html = "";
   topics.forEach(function (t, idx) {
     var tips = t.tips.map(function (x) { return "<li>" + x + "</li>"; }).join("");
+    var cast = CAST[t.id] || ["kid", "cat"];
     html += "<div class='gcard'>" +
       "<div class='ghead'><span class='gicon'>" + t.icon + "</span><div><div class='gcat'>" + t.cat + "</div><div class='gtitle'>" + t.title + "</div></div>" +
       "<button class='btn spk' onclick='GROWTH.read(" + idx + ")'>🔊 读给我听</button></div>" +
+      "<div class='gcast' id='cast" + idx + "'>" + App.Anim.stage({ people: [cast[0]], animals: [cast[1]] }) + "</div>" +
       "<div class='gstory'>" + t.story + "</div>" +
       "<div class='gtip'><b>✅ 好方法</b><ul>" + tips + "</ul></div>" +
       "<div class='gquiz' id='quiz" + idx + "'></div>" +
@@ -48,6 +51,7 @@
   window.GROWTH = {
     read: function (i) {
       var t = topics[i];
+      if (App.Anim) App.Anim.celebrate(document.getElementById("cast" + i));
       Speech.speak(t.title + "。" + t.story + "。" + t.tips.join("。") + "。");
     }
   };
