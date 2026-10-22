@@ -54,16 +54,16 @@
     [/female/i, "女声"], [/male/i, "男声"]
   ];
   function voiceLabel(v) {
-    var i, t;
-    for (i = 0; i < VNAME.length; i++) { if (VNAME[i][0].test(v.name || "")) return VNAME[i][1]; }
+    var i, t, online = /online|natural/i.test(v.name || "");
+    for (i = 0; i < VNAME.length; i++) { if (VNAME[i][0].test(v.name || "")) return VNAME[i][1] + (online ? " · 在线" : ""); }
     t = (v.lang || "").toLowerCase().indexOf("zh") === 0 ? "中文语音" : "英文语音";
-    return (v.name || "未知语音") + " · " + t;
+    return (v.name || "未知语音") + " · " + t + (online ? " · 在线" : "");
   }
   function listVoices() {
     var out = [], i, v;
     var zs = zhList(), es = enList();
-    for (i = 0; i < zs.length; i++) { v = zs[i]; out.push({ name: v.name, lang: v.lang, kind: "zh", label: voiceLabel(v) }); }
-    for (i = 0; i < es.length; i++) { v = es[i]; out.push({ name: v.name, lang: v.lang, kind: "en", label: voiceLabel(v) }); }
+    for (i = 0; i < zs.length; i++) { v = zs[i]; out.push({ name: v.name, lang: v.lang, kind: "zh", online: /online|natural/i.test(v.name || ""), label: voiceLabel(v) }); }
+    for (i = 0; i < es.length; i++) { v = es[i]; out.push({ name: v.name, lang: v.lang, kind: "en", online: /online|natural/i.test(v.name || ""), label: voiceLabel(v) }); }
     return out;
   }
   function setVoice(name, kind) {
@@ -80,12 +80,158 @@
       var u = new w.SpeechSynthesisUtterance(kind === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！");
       u.lang = kind === "en" ? "en-US" : "zh-CN";
       if (vs) u.voice = vs;
+      var stD = currentStyle();
       u.rate = 0.9;
+      u.pitch = stD ? stD.pitch : (kind === "en" ? 1.0 : 1.15);
       w.speechSynthesis.speak(u);
     } catch (e) {}
   }
 
+  /* =====================================================
+   * 云端嗓音（联网）：谷歌翻译 TTS + 有道词典音，声音更多
+   * 用 <audio> 播放，不受同源策略限制；失败自动回退本机嗓音
+   * ===================================================== */
+  var CLOUD = [
+    { id: "g-zh",   name: "谷歌普通话 · 女声",   lang: "zh-CN", tl: "zh-CN", spd: 1,   src: "g",  tag: "云端" },
+    { id: "g-zh-s", name: "谷歌慢速 · 教学音",   lang: "zh-CN", tl: "zh-CN", spd: 0.4, src: "g",  tag: "云端" },
+    { id: "g-tw",   name: "谷歌台湾国语 · 女声", lang: "zh-TW", tl: "zh-TW", spd: 1,   src: "g",  tag: "云端" },
+    { id: "g-hk",   name: "谷歌粤语 · 女声",     lang: "zh-HK", tl: "zh-HK", spd: 1,   src: "g",  tag: "云端" },
+    { id: "yd-zh",  name: "有道词典 · 普通话",   lang: "zh-CN", tl: "zh-CN", spd: 1,   src: "yd", tag: "云端" },
+    { id: "g-en",   name: "谷歌英语 · 女声",     lang: "en-US", tl: "en",    spd: 1,   src: "g",  tag: "云端" },
+    { id: "g-en-s", name: "谷歌英语 · 慢速",     lang: "en-US", tl: "en",    spd: 0.5, src: "g",  tag: "云端" },
+    { id: "yd-en",  name: "有道词典 · 英语",     lang: "en-US", tl: "en",    spd: 1,   src: "yd", tag: "云端" }
+  ];
+  function cloudVoices() { return CLOUD.slice(); }
+  function cloudGet(id) {
+    for (var i = 0; i < CLOUD.length; i++) { if (CLOUD[i].id === id) return CLOUD[i]; }
+    return null;
+  }
+  // 当前选中的云端嗓音（Store.voiceCloud 为空 = 用本机）
+  function currentCloud() {
+    var id = (App.Store && App.Store.state && App.Store.state.voiceCloud) || "";
+    return id ? cloudGet(id) : null;
+  }
+  function setCloudVoice(id) {
+    if (!App.Store || !App.Store.state) return;
+    App.Store.state.voiceCloud = id || "";
+    App.Store.save();
+    stopCloud();
+  }
+  // 切句：接口单条上限约 200 字符，按标点切成短句顺序播放
+  function cloudSplit(text, max) {
+    max = max || 170;
+    var s = String(text || "").replace(/<[^>]+>/g, "").trim();
+    if (!s) return [];
+    var BREAK = { "。": 1, "！": 1, "？": 1, "；": 1, "!": 1, "?": 1, ";": 1, "\n": 1 };
+    var out = [], buf = "", i, ch;
+    for (i = 0; i < s.length; i++) {
+      ch = s.charAt(i);
+      buf += ch;
+      if (BREAK[ch] && buf.length >= 12) { out.push(buf); buf = ""; }
+      else if (buf.length >= max) { out.push(buf); buf = ""; }
+    }
+    if (buf) out.push(buf);
+    return out;
+  }
+  function cloudUrl(v, text) {
+    var t = String(text || "").slice(0, 180);
+    if (v.src === "g") {
+      return "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&ttsspeed=" + v.spd + "&tl=" + v.tl + "&q=" + encodeURIComponent(t);
+    }
+    return "https://dict.youdao.com/dictvoice?le=" + (v.tl === "en" ? "en" : "zh") + "&audio=" + encodeURIComponent(t);
+  }
+  var cloudQ = [], cloudBusy = false, cloudCur = null, cloudCb = null;
+  function stopCloud() {
+    cloudQ = [];
+    if (cloudCur) { try { cloudCur.pause(); } catch (e) {} cloudCur = null; }
+    cloudBusy = false;
+  }
+  function cloudNext() {
+    if (!cloudQ.length) { cloudBusy = false; cloudCur = null; if (cloudCb) { var c = cloudCb; cloudCb = null; c(); } return; }
+    cloudBusy = true;
+    var job = cloudQ.shift();
+    var a = null;
+    try { a = new Audio(); } catch (e) { a = null; }
+    if (!a) { stopCloud(); if (job.fallback) job.fallback(); return; }
+    cloudCur = a;
+    var done = false;
+    function fin(fallback) {
+      if (done) return;
+      done = true;
+      if (fallback && job.fallback) { job.fallback(); }
+      if (a === cloudCur) cloudCur = null;
+      cloudNext();
+    }
+    a.onended = function () { fin(false); };
+    a.onerror = function () { fin(true); };
+    try { a.src = cloudUrl(job.v, job.t); var p = a.play(); if (p && p.catch) p.catch(function () { fin(true); }); } catch (e) { fin(true); }
+    // 兜底：5 秒还没结束就跳过（网络卡住）
+    setTimeout(function () { if (!done) fin(true); }, 5000);
+  }
+  // 云端播放（队列）：fallback 在失败时调用（通常回退本机嗓音）
+  function playCloud(text, v, opt, fallback) {
+    opt = opt || {};
+    if (!v || !text) { if (fallback) fallback(); return; }
+    stopCloud();
+    var segs = cloudSplit(text);
+    if (!segs.length) { if (fallback) fallback(); return; }
+    for (var i = 0; i < segs.length; i++) cloudQ.push({ v: v, t: segs[i], fallback: i === 0 ? fallback : null });
+    cloudNext();
+  }
+  function demoCloud(id) {
+    var v = cloudGet(id);
+    if (!v) return;
+    playCloud(v.tl === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！", v, {}, function () {
+      // 云端失败 → 回退本机
+      if (v.tl === "en") speakEnLocal("Hello! I am your English voice.", { rate: 0.9 });
+      else speakLocal("你好，我是你的朗读小老师，我们一起来学拼音吧！", { rate: 0.9 });
+    });
+  }
+
+  /* ---------- 本机嗓音变声风格（离线：同一嗓音衍生多种音色） ---------- */
+  var STYLES = [
+    { id: "st-baby",  name: "🍼 萌娃音 · 又萌又甜", kind: "zh", rate: 0.92, pitch: 1.9 },
+    { id: "st-clear", name: "🌟 清脆童声 · 读题",   kind: "zh", rate: 1.0,  pitch: 1.45 },
+    { id: "st-soft",  name: "🌙 温柔女声 · 讲故事", kind: "zh", rate: 0.95, pitch: 1.25 },
+    { id: "st-calm",  name: "🎩 沉稳男声 · 慢讲课", kind: "zh", rate: 0.92, pitch: 0.75 },
+    { id: "st-slow",  name: "🐢 慢速教学 · 听得清", kind: "zh", rate: 0.68, pitch: 1.1 },
+    { id: "st-en-b",  name: "🇬🇧 英语清晰 · 朗读", kind: "en", rate: 0.9,  pitch: 1.05 },
+    { id: "st-en-s",  name: "🐢 英语慢速 · 教学",   kind: "en", rate: 0.6,  pitch: 1.0 }
+  ];
+  function styleVoices() { return STYLES.slice(); }
+  function styleGet(id) {
+    for (var i = 0; i < STYLES.length; i++) { if (STYLES[i].id === id) return STYLES[i]; }
+    return null;
+  }
+  function currentStyle() {
+    var id = (App.Store && App.Store.state && App.Store.state.voiceStyle) || "";
+    return id ? styleGet(id) : null;
+  }
+  function setStyleVoice(id) {
+    if (!App.Store || !App.Store.state) return;
+    App.Store.state.voiceStyle = id || "";
+    App.Store.save();
+  }
+  // 风格试听：本机嗓音 + 变声参数
+  function demoStyle(id) {
+    var st = styleGet(id);
+    if (!st) return;
+    if (st.kind === "en") speakEnLocal("Hello! I am your English voice.", { rate: st.rate, pitch: st.pitch });
+    else speakLocal("你好，我是你的朗读小老师，我们一起来学拼音吧！", { rate: st.rate, pitch: st.pitch });
+  }
+
   function speakEn(text, opt) {
+    opt = opt || {};
+    if (!("speechSynthesis" in w) || !text) return;
+    var cv = currentCloud();
+    if (cv && cv.tl === "en") {
+      try { w.speechSynthesis.cancel(); } catch (e0) {}
+      playCloud(text, cv, opt, function () { speakEnLocal(text, opt); });
+      return;
+    }
+    speakEnLocal(text, opt);
+  }
+  function speakEnLocal(text, opt) {
     opt = opt || {};
     if (!("speechSynthesis" in w) || !text) return;
     if (!enVoice) pickVoice();
@@ -95,8 +241,9 @@
       var u = new w.SpeechSynthesisUtterance(String(text));
       u.lang = "en-US";
       if (enVoice) u.voice = enVoice;
-      u.rate = (typeof opt.rate === "number") ? opt.rate : 0.85;
-      u.pitch = (typeof opt.pitch === "number") ? opt.pitch : 1.0;
+      var stE = currentStyle();
+      u.rate = (typeof opt.rate === "number") ? opt.rate : (stE ? stE.rate : 0.85);
+      u.pitch = (typeof opt.pitch === "number") ? opt.pitch : (stE && stE.kind === "en" ? stE.pitch : 1.0);
       w.speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -192,10 +339,21 @@
       }
       out.push(t);
     }
-    speak(out.join(" "), opt || { rate: 0.75 });
+    speak(out.join(" "), opt); // 语速交给"声音风格"接管（默认偏慢，适合教学）
   }
 
   function speak(text, opt) {
+    opt = opt || {};
+    if (!("speechSynthesis" in w) || !text) return;
+    var cv = currentCloud();
+    if (cv && cv.tl !== "en") {
+      try { w.speechSynthesis.cancel(); } catch (e0) {}
+      playCloud(text, cv, opt, function () { speakLocal(text, opt); });
+      return;
+    }
+    speakLocal(text, opt);
+  }
+  function speakLocal(text, opt) {
     opt = opt || {};
     if (!("speechSynthesis" in w) || !text) return;
     if (!voice) pickVoice();
@@ -205,8 +363,9 @@
       var u = new w.SpeechSynthesisUtterance(String(text).replace(/<[^>]+>/g, ""));
       u.lang = "zh-CN";
       if (voice) u.voice = voice;
-      u.rate = (typeof opt.rate === "number") ? opt.rate : 0.95;
-      u.pitch = (typeof opt.pitch === "number") ? opt.pitch : 1.15;
+      var st1 = currentStyle();
+      u.rate = (typeof opt.rate === "number") ? opt.rate : (st1 ? st1.rate : 0.95);
+      u.pitch = (typeof opt.pitch === "number") ? opt.pitch : (st1 ? st1.pitch : 1.15);
       w.speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -227,7 +386,7 @@
   var seqRunning = false;
   function seq(list) {
     if (!list || !list.length) return;
-    if (seqRunning) { try { w.speechSynthesis.cancel(); } catch (e) {} }
+    if (seqRunning) { try { w.speechSynthesis.cancel(); } catch (e) {} stopCloud(); }
     seqRunning = true;
     var i = 0;
     (function step() {
@@ -238,6 +397,23 @@
       var isEn = (item && typeof item === "object") ? !!item.en : false;
       var done = false;
       var onend = function () { if (done) return; done = true; setTimeout(step, 120); };
+      // 云端嗓音：中文段整段交给云端队列（自动切句）
+      var cv1 = isEn ? null : currentCloud();
+      if (cv1 && cv1.tl !== "en") {
+        try { w.speechSynthesis.cancel(); } catch (e2) {}
+        playCloud(txt, cv1, {}, function () {
+          // 云端失败 → 本机读这一段再继续
+          try {
+            w.speechSynthesis.cancel();
+            var u2 = new w.SpeechSynthesisUtterance(String(txt).replace(/<[^>]+>/g, ""));
+            u2.lang = "zh-CN"; if (voice) u2.voice = voice; u2.rate = 0.95;
+            u2.onend = onend; u2.onerror = onend;
+            w.speechSynthesis.speak(u2);
+            setTimeout(onend, Math.max(2600, String(txt).length * 340));
+          } catch (e3) { onend(); }
+        });
+        return;
+      }
       try {
         if ("speechSynthesis" in w) {
           w.speechSynthesis.cancel();
@@ -297,7 +473,9 @@
 
   App.Speech = {
     speak: speak,
+    speakLocal: speakLocal,
     speakEn: speakEn,
+    speakEnLocal: speakEnLocal,
     speakPinyin: speakPinyin,
     seq: seq,
     autoRead: autoRead,
@@ -306,6 +484,16 @@
     listVoices: listVoices,
     setVoice: setVoice,
     demoVoice: demoVoice,
+    cloudVoices: cloudVoices,
+    currentCloud: currentCloud,
+    setCloudVoice: setCloudVoice,
+    demoCloud: demoCloud,
+    playCloud: playCloud,
+    stopCloud: stopCloud,
+    styleVoices: styleVoices,
+    currentStyle: currentStyle,
+    setStyleVoice: setStyleVoice,
+    demoStyle: demoStyle,
     sfx: sfx
   };
 })(window);

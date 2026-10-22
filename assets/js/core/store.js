@@ -7,7 +7,7 @@
   "use strict";
   var App = (w.App = w.App || {});
   var KEY = "yg.learn.v1";
-  var def = { autoRead: true, stars: 0, badges: [], learned: {}, visits: 0, lastVisit: "", voiceZh: "", voiceEn: "" };
+  var def = { autoRead: true, stars: 0, badges: [], learned: {}, visits: 0, lastVisit: "", voiceZh: "", voiceEn: "", voiceCloud: "", voiceStyle: "" };
 
   function read() {
     try {

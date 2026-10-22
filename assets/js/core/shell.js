@@ -29,6 +29,8 @@
         showBadges: false,
         showVoices: false,
         voices: [],
+        clouds: (App.Speech && App.Speech.cloudVoices) ? App.Speech.cloudVoices() : [],
+        styles: (App.Speech && App.Speech.styleVoices) ? App.Speech.styleVoices() : [],
         vLoading: true,
         vTry: 0
       };
@@ -45,7 +47,11 @@
       zhVoices: function () { return this.voices.filter(function (v) { return v.kind === "zh"; }); },
       enVoices: function () { return this.voices.filter(function (v) { return v.kind === "en"; }); },
       curZh: function () { return this.st.voiceZh || ""; },
-      curEn: function () { return this.st.voiceEn || ""; }
+      curEn: function () { return this.st.voiceEn || ""; },
+      curCloud: function () { return this.st.voiceCloud || ""; },
+      curStyle: function () { return this.st.voiceStyle || ""; },
+      zhOnline: function () { return this.voices.filter(function (v) { return v.kind === "zh" && v.online; }); },
+      zhLocal: function () { return this.voices.filter(function (v) { return v.kind === "zh" && !v.online; }); }
     },
     methods: {
       toggleRead: function () {
@@ -60,19 +66,61 @@
       },
       refreshVoices: function () {
         var self = this;
-        if (App.Speech) App.Speech.pickVoice();
+        if (App.Speech) {
+          // 主动触发一次语音列表加载（Edge 在线语音靠它异步返回）
+          try { if (w.speechSynthesis) w.speechSynthesis.getVoices(); } catch (e0) {}
+          App.Speech.pickVoice();
+        }
         this.voices = (App.Speech && App.Speech.listVoices) ? App.Speech.listVoices() : [];
+        this.clouds = (App.Speech && App.Speech.cloudVoices) ? App.Speech.cloudVoices() : [];
+        this.styles = (App.Speech && App.Speech.styleVoices) ? App.Speech.styleVoices() : [];
         this.vLoading = !this.voices.length;
-        // 手机端语音列表异步返回：自动重试几次
-        if (this.vLoading && this.vTry < 6) {
+        // Edge 在线人声异步返回慢：轮询最多约 20 秒
+        if (this.vLoading && this.vTry < 40) {
           this.vTry++;
-          setTimeout(function () { if (self.showVoices) self.refreshVoices(); }, 400);
+          setTimeout(function () { if (self.showVoices) self.refreshVoices(); }, 500);
         }
       },
       pickV: function (v) {
         if (App.Speech) {
           App.Speech.setVoice(v.name, v.kind);
           App.Speech.demoVoice(v.name, v.kind);
+        }
+      },
+      // 模板里不能直接写 App.Speech（作用域未定义会报错），一律走方法
+      tryVoice: function (v) {
+        if (App.Speech) App.Speech.demoVoice(v.name, v.kind);
+      },
+      // 云端嗓音：选中即用，读题/拼音/英语全部走云端，联网失败自动回退本机
+      pickCloud: function (v) {
+        if (App.Speech) {
+          App.Speech.setCloudVoice(v.id);
+          App.Speech.demoCloud(v.id);
+        }
+      },
+      tryCloud: function (v) {
+        if (App.Speech) App.Speech.demoCloud(v.id);
+      },
+      useLocal: function () {
+        if (App.Speech) {
+          App.Speech.setCloudVoice("");
+          App.Speech.speak("已换回本机声音");
+        }
+      },
+      // 本机变声风格：同一嗓音多种音色，离线可用
+      pickStyle: function (s) {
+        if (App.Speech) {
+          App.Speech.setStyleVoice(s.id);
+          App.Speech.demoStyle(s.id);
+        }
+      },
+      tryStyle: function (s) {
+        if (App.Speech) App.Speech.demoStyle(s.id);
+      },
+      clearStyle: function () {
+        if (App.Speech) {
+          App.Speech.setStyleVoice("");
+          App.Speech.speak("已恢复原声");
         }
       },
       resetV: function () {
@@ -99,28 +147,57 @@
       '</div>',
       '<div class="voice-pop" v-if="showVoices">',
       '<div class="vp-title">🎙️ 选择朗读声音 <span class="vp-close" @click="showVoices=false">✕</span></div>',
-      '<div class="vp-sub">中文声音（读拼音、读题、读课文）</div>',
+      '<div class="vp-sub">☁️ 云端嗓音（联网，声音更多；失败自动回退本机）</div>',
       '<div class="vlist">',
-      '<div class="vitem" v-for="v in zhVoices" :key="\'z\'+v.name" :class="{on: curZh === v.name}" @click="pickV(v)">',
+      '<div class="vitem cloud" v-for="v in clouds" :key="\'c\'+v.id" :class="{on: curCloud === v.id}" @click="pickCloud(v)">',
+      '<span class="vradio">{{curCloud === v.id ? "🔘" : "⚪"}}</span>',
+      '<span class="vlabel">{{v.name}}</span>',
+      '<span class="vlang">{{v.tag}}</span>',
+      '<button class="vtry" @click.stop="tryCloud(v)">▶ 试听</button>',
+      '</div>',
+      '</div>',
+      '<div class="vp-local" v-if="curCloud"><button class="btn" @click="useLocal">↩️ 换回本机嗓音</button></div>',
+      '<div class="vp-sub">🎭 变声风格（同一嗓音变出多种音色，离线可用）</div>',
+      '<div class="vlist">',
+      '<div class="vitem style" v-for="s in styles" :key="s.id" :class="{on: curStyle === s.id}" @click="pickStyle(s)">',
+      '<span class="vradio">{{curStyle === s.id ? "🔘" : "⚪"}}</span>',
+      '<span class="vlabel">{{s.name}}</span>',
+      '<span class="vlang">{{s.kind === "en" ? "英语" : "中文"}}</span>',
+      '<button class="vtry" @click.stop="tryStyle(s)">▶ 试听</button>',
+      '</div>',
+      '</div>',
+      '<div class="vp-local" v-if="curStyle"><button class="btn" @click="clearStyle">↩️ 取消变声（原声）</button></div>',
+      '<div class="vp-sub">👤 人声嗓音（Edge 浏览器联网会出现更多在线人声）</div>',
+      '<div class="vp-sub2">中文 · 在线人声（联网，Edge 自动出现）</div>',
+      '<div class="vlist">',
+      '<div class="vitem" v-for="v in zhOnline" :key="\'o\'+v.name" :class="{on: curZh === v.name}" @click="pickV(v)">',
       '<span class="vradio">{{curZh === v.name ? "🔘" : "⚪"}}</span>',
       '<span class="vlabel">{{v.label}}</span>',
       '<span class="vlang">{{v.lang}}</span>',
-      '<button class="vtry" @click.stop="App.Speech && App.Speech.demoVoice(v.name, v.kind)">▶ 试听</button>',
+      '<button class="vtry" @click.stop="tryVoice(v)">▶ 试听</button>',
       '</div>',
       '</div>',
-      '<div class="vp-sub">英文声音（读英语单词和句子）</div>',
+      '<div class="vp-sub2">中文 · 本机人声（离线）</div>',
+      '<div class="vlist">',
+      '<div class="vitem" v-for="v in zhLocal" :key="\'z\'+v.name" :class="{on: curZh === v.name}" @click="pickV(v)">',
+      '<span class="vradio">{{curZh === v.name ? "🔘" : "⚪"}}</span>',
+      '<span class="vlabel">{{v.label}}</span>',
+      '<span class="vlang">{{v.lang}}</span>',
+      '<button class="vtry" @click.stop="tryVoice(v)">▶ 试听</button>',
+      '</div>',
+      '</div>',
+      '<div class="vp-sub2">英文人声（读英语单词和句子）</div>',
       '<div class="vlist">',
       '<div class="vitem" v-for="v in enVoices" :key="\'e\'+v.name" :class="{on: curEn === v.name}" @click="pickV(v)">',
       '<span class="vradio">{{curEn === v.name ? "🔘" : "⚪"}}</span>',
       '<span class="vlabel">{{v.label}}</span>',
       '<span class="vlang">{{v.lang}}</span>',
-      '<button class="vtry" @click.stop="App.Speech && App.Speech.demoVoice(v.name, v.kind)">▶ 试听</button>',
+      '<button class="vtry" @click.stop="tryVoice(v)">▶ 试听</button>',
       '</div>',
       '</div>',
-      '<div class="vp-empty" v-if="vLoading">正在获取这台设备的声音列表…（手机需要等一两秒）</div>',
+      '<div class="vp-empty" v-if="vLoading">正在获取这台设备的声音列表…（在线人声需要等几秒）</div>',
       '<div class="vp-foot"><button class="btn" @click="resetV">↩️ 恢复默认</button>',
-      '<span class="vp-tip">选好点名字就能换，换完自动播放一句试听</span></div>',
-      '</div>',
+      '<span class="vp-tip">选好点名字就能换，换完自动播放一句试听</span></div>',      '</div>',
       '<div class="badge-pop" v-if="showBadges">',
       '<div class="bp-title">🏅 我的徽章</div>',
       '<div class="bp-grid">',
