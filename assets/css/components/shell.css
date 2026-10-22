@@ -105,6 +105,16 @@
   border: 1px dashed #ffb74d; border-radius: 8px; padding: 6px 8px; margin: 6px 0 2px;
 }
 .voice-pop .vp-note b { color: #e65100; }
+/* 声音自检块：现在能不能出声 */
+.voice-pop .vp-diag {
+  background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 8px;
+  padding: 7px 9px; margin: 6px 0 2px; font-size: 12px; line-height: 1.55; color: #2e7d32;
+}
+.voice-pop .vp-diag.bad { background: #ffebee; border-color: #ef9a9a; color: #c62828; }
+.voice-pop .vp-diag-t { font-weight: 700; }
+.voice-pop .vp-diag-b { margin-top: 6px; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px; }
+.voice-pop .vp-diag-b .btn { font-size: 12px; padding: 4px 9px; min-height: 0; }
+.voice-pop .vp-diag-d { margin-top: 5px; font-size: 11px; line-height: 1.5; opacity: .85; }
 /* 默认嗓音在这台设备缺失时的说明块 */
 .voice-pop .vp-warn {
   background: #eceff1; border: 1px solid #b0bec5; border-radius: 8px;

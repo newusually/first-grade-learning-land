@@ -37,6 +37,10 @@
         missDefault: false,
         defName: (App.Speech && App.Speech.defaultZhName) ? App.Speech.defaultZhName() : "",
         showWhy: false,
+        // 声音自检：现在到底能不能出声、走的是本机还是联网
+        diagTxt: "还没检测",
+        diagUsing: "本机",
+        testing: false,
         // 暂存草稿：点试听只改这里，点「保存」才写进 Store（全站生效）
         draft: { zh: "", en: "", cloud: "", style: "" }
       };
@@ -77,6 +81,32 @@
         this.showBadges = false;
         this.syncDraft();
         this.refreshVoices();
+        this.refreshDiag();
+      },
+      // 🩺 声音自检：把「现在能不能出声、用的哪条通道」显示出来
+      refreshDiag: function () {
+        var d = (App.Speech && App.Speech.diag) ? App.Speech.diag() : null;
+        if (!d) { this.diagTxt = "这个浏览器没有语音功能，会自动改用联网发音"; this.diagUsing = "云端"; return; }
+        this.diagUsing = d.using;
+        this.diagTxt = d.note + (d.supported ? "（本机嗓音：中文 " + d.zh + " 个、英文 " + d.en + " 个）" : "");
+      },
+      selfTestSnd: function () {
+        var self = this;
+        this.testing = true;
+        if (App.Speech && App.Speech.selfTest) {
+          App.Speech.selfTest(function () { self.testing = false; self.refreshDiag(); });
+        } else { this.testing = false; }
+      },
+      // 走联网发音 / 换回本机（只改草稿并试听，点「保存」才全站生效）
+      forceCloudSnd: function () {
+        this.draft.cloud = "yd-zh";
+        if (App.Speech) App.Speech.demoCloud("yd-zh");
+        this.refreshDiag();
+      },
+      forceLocalSnd: function () {
+        this.draft.cloud = "";
+        if (App.Speech) App.Speech.demoVoice(this.draft.zh || "", "zh", { styleId: this.draft.style });
+        this.refreshDiag();
       },
       // 打开面板/取消时，把草稿同步回「已保存」的状态
       syncDraft: function () {
@@ -187,6 +217,15 @@
       '<div class="voice-pop" v-if="showVoices">',
       '<div class="vp-title">🎙️ 选择朗读声音 <span class="vp-close" @click="cancelV">✕</span></div>',
       '<div class="vp-note">🔔 点名字/▶试听只是<b>预览</b>，选好后点最下面的 <b>💾 保存</b>，本站每个页面都会用这个声音。</div>',
+      '<div class="vp-diag" :class="{bad: diagUsing !== \'本机\'}">',
+      '<div class="vp-diag-t">🩺 {{diagTxt}}</div>',
+      '<div class="vp-diag-b">',
+      '<button class="btn" @click="selfTestSnd">{{testing ? "🔊 正在念测试句…" : "🔧 念一句测试"}}</button>',
+      '<button class="btn ghost" v-if="diagUsing !== \'本机\'" @click="forceCloudSnd">🌐 用联网发音</button>',
+      '<button class="btn ghost" v-if="diagUsing === \'本机\' && draft.cloud" @click="forceLocalSnd">↩️ 换回本机</button>',
+      '</div>',
+      '<div class="vp-diag-d">不出声时先点「🔧 念一句测试」：本机叫不醒会自动改联网发音。联网发音要联网，且要先用鼠标点一下页面（浏览器规定）。</div>',
+      '</div>',
       '<div class="vp-warn" v-if="missDefault && !vLoading">',
       '<div class="vp-warn-t">⚠️ 这台设备没有默认嗓音「{{defName}}」</div>',
       '<div class="vp-warn-d">它标着「在线」，指的是<b>合成在微软云端做</b>；但能不能出现在这个列表里，要看 Windows 有没有装「中文(繁体，台湾)」语言包。这台机器没装，所以浏览器列不出来。</div>',

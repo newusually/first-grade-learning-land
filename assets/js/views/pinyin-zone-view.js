@@ -128,6 +128,9 @@
       Speech.autoRead("拼音专区，先学写法，再练拼读！");
       var first = this.writeCards[0];
       if (first) this.hero = { s: first.s, pos: first.pos, tip: PZ.MEM[first.s] || "" };
+      // 进页面就把第一道题念出来（题目 + 选项），等欢迎语念完再接上
+      var self = this;
+      setTimeout(function () { self.sayQuiz(self.tone.q, "tone"); }, 2800);
     },
     computed: {
       heroY: function () {

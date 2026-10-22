@@ -50,13 +50,23 @@
   // 默认嗓音（HsiaoChen 台湾）在这台设备是否缺失
   function defaultZhMissing() { return !hasZhVoice(ZH_DEFAULT[0]); }
   // 按默认清单挑一个（用户没手动选过声音时才用）
-  function defaultZh(zs) {
+  // 重要：优先挑「离线嗓音」（localService=true）。标着 Online 的嗓音合成在微软云端做，
+  // 一旦网络不通就整段静音，所以离线能响的排在最前面。
+  function pickFrom(L, names, res, favor) {
     var i, j, v;
-    for (i = 0; i < ZH_DEFAULT.length; i++) { v = byName(zs, ZH_DEFAULT[i]); if (v) return v; }
-    for (j = 0; j < ZH_DEFAULT_RE.length; j++) {
-      for (i = 0; i < zs.length; i++) { if (ZH_DEFAULT_RE[j].test(zs[i].name || "")) return zs[i]; }
+    for (i = 0; i < names.length; i++) { v = byName(L, names[i]); if (v) return v; }
+    for (j = 0; j < res.length; j++) {
+      for (i = 0; i < L.length; i++) { if (res[j].test(L[i].name || "")) return L[i]; }
     }
-    return null;
+    var f = L.filter(function (x) { return favor.test(x.name || ""); })[0];
+    return f || null;
+  }
+  function defaultZh(zs) {
+    var loc = zs.filter(function (x) { return x.localService === true; });
+    var v = loc.length ? pickFrom(loc, ZH_DEFAULT, ZH_DEFAULT_RE, ZH_FAVOR) : null;
+    if (v) return v;
+    v = pickFrom(zs, ZH_DEFAULT, ZH_DEFAULT_RE, ZH_FAVOR);
+    return v || zs[0] || null;
   }
   function pickVoice() {
     if (!("speechSynthesis" in w)) return;
@@ -83,8 +93,7 @@
       var wantEn = (App.Store && App.Store.state && App.Store.state.voiceEn) || "";
       enVoice = wantEn ? (es.filter(function (v) { return v.name === wantEn; })[0] || es[0] || null) : (es[0] || null);
     } catch (e) { voice = null; enVoice = null; }
-    if (voice && pendZh.length) flush("zh");
-    if (enVoice && pendEn.length) flush("en");
+    pump();
   }
   try { pickVoice(); if (w.speechSynthesis) w.speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
 
@@ -120,18 +129,13 @@
   // 试听：opt.styleId 显式指定变声风格（面板里还没保存的暂存风格靠它预览）
   function demoVoice(name, kind, opt) {
     opt = opt || {};
-    if (!("speechSynthesis" in w)) return;
-    try {
-      var vs = (kind === "en" ? enList() : zhList()).filter(function (v) { return v.name === name; })[0];
-      w.speechSynthesis.cancel();
-      var u = new w.SpeechSynthesisUtterance(kind === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！");
-      u.lang = kind === "en" ? "en-US" : "zh-CN";
-      if (vs) u.voice = vs;
-      var stD = (typeof opt.styleId !== "undefined") ? styleGet(opt.styleId) : currentStyle();
-      u.rate = 0.9;
-      u.pitch = stD ? stD.pitch : (kind === "en" ? 1.0 : 1.15);
-      w.speechSynthesis.speak(u);
-    } catch (e) {}
+    var stD = (typeof opt.styleId !== "undefined") ? styleGet(opt.styleId) : currentStyle();
+    // 走队列（不 cancel），本机不可用时引擎自动改联网发音，试听永远有声
+    push({
+      t: kind === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！",
+      en: kind === "en", vname: name,
+      opt: { rate: 0.9, pitch: stD ? stD.pitch : (kind === "en" ? 1.0 : 1.15) }
+    });
   }
 
   /* =====================================================
@@ -139,14 +143,14 @@
    * 用 <audio> 播放，不受同源策略限制；失败自动回退本机嗓音
    * ===================================================== */
   var CLOUD = [
-    { id: "g-zh",   name: "谷歌普通话 · 女声",   lang: "zh-CN", tl: "zh-CN", spd: 1,   src: "g",  tag: "云端" },
-    { id: "g-zh-s", name: "谷歌慢速 · 教学音",   lang: "zh-CN", tl: "zh-CN", spd: 0.4, src: "g",  tag: "云端" },
-    { id: "g-tw",   name: "谷歌台湾国语 · 女声", lang: "zh-TW", tl: "zh-TW", spd: 1,   src: "g",  tag: "云端" },
-    { id: "g-hk",   name: "谷歌粤语 · 女声",     lang: "zh-HK", tl: "zh-HK", spd: 1,   src: "g",  tag: "云端" },
-    { id: "yd-zh",  name: "有道词典 · 普通话",   lang: "zh-CN", tl: "zh-CN", spd: 1,   src: "yd", tag: "云端" },
-    { id: "g-en",   name: "谷歌英语 · 女声",     lang: "en-US", tl: "en",    spd: 1,   src: "g",  tag: "云端" },
-    { id: "g-en-s", name: "谷歌英语 · 慢速",     lang: "en-US", tl: "en",    spd: 0.5, src: "g",  tag: "云端" },
-    { id: "yd-en",  name: "有道词典 · 英语",     lang: "en-US", tl: "en",    spd: 1,   src: "yd", tag: "云端" }
+    { id: "g-zh",   name: "谷歌普通话 · 女声（国内常不通）",   lang: "zh-CN", tl: "zh-CN", spd: 1,   src: "g",  tag: "云端" },
+    { id: "g-zh-s", name: "谷歌慢速 · 教学音（国内常不通）",   lang: "zh-CN", tl: "zh-CN", spd: 0.4, src: "g",  tag: "云端" },
+    { id: "g-tw",   name: "谷歌台湾国语 · 女声（国内常不通）", lang: "zh-TW", tl: "zh-TW", spd: 1,   src: "g",  tag: "云端" },
+    { id: "g-hk",   name: "谷歌粤语 · 女声（国内常不通）",     lang: "zh-HK", tl: "zh-HK", spd: 1,   src: "g",  tag: "云端" },
+    { id: "yd-zh",  name: "有道词典 · 普通话（推荐）",   lang: "zh-CN", tl: "zh-CN", spd: 1,   src: "yd", tag: "云端" },
+    { id: "g-en",   name: "谷歌英语 · 女声（国内常不通）",     lang: "en-US", tl: "en",    spd: 1,   src: "g",  tag: "云端" },
+    { id: "g-en-s", name: "谷歌英语 · 慢速（国内常不通）",     lang: "en-US", tl: "en",    spd: 0.5, src: "g",  tag: "云端" },
+    { id: "yd-en",  name: "有道词典 · 英语（推荐）",     lang: "en-US", tl: "en",    spd: 1,   src: "yd", tag: "云端" }
   ];
   function cloudVoices() { return CLOUD.slice(); }
   function cloudGet(id) {
@@ -229,10 +233,9 @@
   function demoCloud(id) {
     var v = cloudGet(id);
     if (!v) return;
-    playCloud(v.tl === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！", v, {}, function () {
-      // 云端失败 → 回退本机
-      if (v.tl === "en") speakEnLocal("Hello! I am your English voice.", { rate: 0.9 });
-      else speakLocal("你好，我是你的朗读小老师，我们一起来学拼音吧！", { rate: 0.9 });
+    push({
+      t: v.tl === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！",
+      en: v.tl === "en", cloudId: id, opt: { rate: 0.9 }
     });
   }
 
@@ -264,37 +267,15 @@
   function demoStyle(id) {
     var st = styleGet(id);
     if (!st) return;
-    if (st.kind === "en") speakEnLocal("Hello! I am your English voice.", { rate: st.rate, pitch: st.pitch });
-    else speakLocal("你好，我是你的朗读小老师，我们一起来学拼音吧！", { rate: st.rate, pitch: st.pitch });
+    push({
+      t: st.kind === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！",
+      en: st.kind === "en", opt: { rate: st.rate, pitch: st.pitch }
+    });
   }
 
-  function speakEn(text, opt) {
-    opt = opt || {};
-    if (!("speechSynthesis" in w) || !text) return;
-    var cv = currentCloud();
-    if (cv && cv.tl === "en") {
-      try { w.speechSynthesis.cancel(); } catch (e0) {}
-      playCloud(text, cv, opt, function () { speakEnLocal(text, opt); });
-      return;
-    }
-    speakEnLocal(text, opt);
-  }
-  function speakEnLocal(text, opt) {
-    opt = opt || {};
-    if (!("speechSynthesis" in w) || !text) return;
-    if (!enVoice) pickVoice();
-    if (!enVoice) { pendEn.push({ t: text, o: opt }); return; }
-    try {
-      w.speechSynthesis.cancel();
-      var u = new w.SpeechSynthesisUtterance(String(text));
-      u.lang = "en-US";
-      if (enVoice) u.voice = enVoice;
-      var stE = currentStyle();
-      u.rate = (typeof opt.rate === "number") ? opt.rate : (stE ? stE.rate : 0.85);
-      u.pitch = (typeof opt.pitch === "number") ? opt.pitch : (stE && stE.kind === "en" ? stE.pitch : 1.0);
-      w.speechSynthesis.speak(u);
-    } catch (e) {}
-  }
+  // 统一进串行队列（真正的播放在引擎里做，见文末「播放引擎 v2」）
+  function speakEn(text, opt) { push({ t: text, en: true, opt: opt }); }
+  function speakEnLocal(text, opt) { push({ t: text, en: true, opt: opt, local: true }); }
 
   /* ---------- 拼音朗读：按中文自然语言读，绝不被读成英文字母 ---------- */
   var PY_INIT = { b: "波", p: "坡", m: "摸", f: "佛", d: "得", t: "特", n: "呢", l: "勒", g: "哥", k: "科", h: "喝", j: "鸡", q: "七", x: "西", zh: "知", ch: "吃", sh: "诗", z: "资", c: "刺", s: "思", r: "日", y: "衣", w: "乌" };
@@ -429,104 +410,258 @@
     return Math.round(ms);
   }
 
-  function speak(text, opt) {
-    opt = opt || {};
-    if (!("speechSynthesis" in w) || !text) return;
-    var cv = currentCloud();
-    if (cv && cv.tl !== "en") {
-      try { w.speechSynthesis.cancel(); } catch (e0) {}
-      playCloud(text, cv, opt, function () { speakLocal(text, opt); });
-      return;
-    }
-    speakLocal(text, opt);
+  /* =====================================================
+   * 播放引擎 v2：串行队列 / 不乱 cancel / 叫不醒就自动联网发音
+   * -----------------------------------------------------
+   * 「点了没声音」的根因：Chromium 内核（Edge、搜狗、360、QQ 浏览器）
+   * 在 cancel() 之后立刻 speak() 会把整段话吞掉，旧代码每一句都
+   * 先 cancel 再 speak，于是全站静音。新引擎三条铁律：
+   *   ① 全程串行排队，只有 stop() 才 cancel，cancel 后留 200ms 静默期；
+   *   ② 每句话带看门狗：750ms 还没 onstart 视为被吞 → 重试一次，
+   *      再失败就判定本机语音不可用，自动改走联网发音（<audio> 播放）；
+   *   ③ 浏览器根本没语音引擎 / 没装这门语言的语音包 → 直接走联网发音。
+   * ===================================================== */
+  function supported() {
+    return !!("speechSynthesis" in w) && typeof w.SpeechSynthesisUtterance === "function";
   }
-  function speakLocal(text, opt) {
-    opt = opt || {};
-    if (!("speechSynthesis" in w) || !text) return;
-    if (!voice) pickVoice();
-    if (!voice) { pendZh.push({ t: text, o: opt }); return; }
+  var Q = [], busy = false, gate = 0, unlocked = false;
+  var localFail = 0, localDead = false, cloudFail = 0, cloudOK = false;
+  var CA = null;
+
+  function cloudAudio() { if (!CA) { try { CA = new Audio(); } catch (e) { CA = null; } } return CA; }
+
+  function push(job) {
+    if (!job || (job.t == null && !job.fn)) return;
+    Q.push(job);
+    if (Q.length > 40) Q.splice(0, Q.length - 40);   // 防止狂点堆积
+    // 只能走联网发音、而用户还没点过页面 → 浏览器会挡住，给个「点我开启声音」的小提示
+    if (!unlocked && !localUsable(job.en)) setTimeout(unlockTip, 400);
+    pump();
+  }
+  // 兜底提示条：只在「本机发不出声、只能联网念」且用户还没点过页面时出现
+  // 两条路都试过还是没响 → 明说，别让用户干等
+  var silent = 0, failTipShown = false;
+  function failTip() {
+    if (failTipShown || !w.document || !w.document.body) return;
+    failTipShown = true;
+    var d = w.document, el;
+    try { el = d.createElement("div"); } catch (e) { return; }
+    el.setAttribute("style", "position:fixed;left:50%;bottom:18px;-webkit-transform:translateX(-50%);transform:translateX(-50%);z-index:99999;max-width:92%;background:#fff;border:2px solid #90a4ae;border-radius:14px;padding:9px 16px;font-size:13px;line-height:1.5;color:#37474f;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer");
+    el.textContent = "🔇 这台设备现在发不出声音：本机语音没响应，联网发音也没成功。请检查系统音量、网络，或换 Edge / Chrome 打开；点我关掉这条提示。";
+    el.onclick = function () { try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e1) {} };
+    d.body.appendChild(el);
+  }
+  var tipShown = false;
+  function unlockTip() {
+    if (tipShown || unlocked || !w.document || !w.document.body) return;
+    tipShown = true;
+    var d = w.document, el;
+    try { el = d.createElement("div"); } catch (e) { return; }
+    el.setAttribute("style", "position:fixed;left:50%;bottom:18px;-webkit-transform:translateX(-50%);transform:translateX(-50%);z-index:99999;background:#fff;border:2px solid #ff7043;border-radius:999px;padding:8px 16px;font-size:14px;color:#d84315;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:pointer");
+    el.textContent = "🔊 点一下这里，开启朗读声音";
+    el.onclick = function () {
+      unlocked = true;
+      try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e1) {}
+      pump();
+    };
+    d.body.appendChild(el);
+    setTimeout(function () { try { if (el.parentNode) el.parentNode.removeChild(el); } catch (e2) {} }, 20000);
+  }
+  function pump() {
+    if (busy || !Q.length) return;
+    if (nowMs() < gate) { setTimeout(pump, 60); return; }
+    // 用户还没点过页面：联网发音会被浏览器挡掉，先攒着，一点页面立刻念
+    if (!unlocked && !localUsable(Q[0].en)) return;
+    busy = true;
+    var job = Q.shift();
+    runJob(job, function () {
+      busy = false;
+      setTimeout(pump, 90);
+    });
+  }
+  function runJob(job, next) {
+    var over = false;
+    function fin() { if (over) return; over = true; if (job.cb) { try { job.cb(); } catch (e1) {} } next(); }
+    if (job.fn) { try { job.fn(fin); } catch (e0) { fin(); } return; }
+    var txt = String(job.t == null ? "" : job.t).replace(/<[^>]+>/g, "").trim();
+    if (!txt) { fin(); return; }
+    var cv = job.local ? null : (job.cloudId ? cloudGet(job.cloudId) : currentCloud());
+    if (cv && ((job.en && cv.tl === "en") || (!job.en && cv.tl !== "en"))) { cloudSeq(txt, cv, fin); return; }
+    // 本机语音叫不醒/根本没有 → 直接联网发音，不等失败
+    if (!job.local && !localUsable(job.en)) { cloudAuto(txt, job, fin); return; }
+    localSpeak(txt, job, fin);
+  }
+  function localUsable(en) {
+    if (!supported() || localDead) return false;
     try {
-      w.speechSynthesis.cancel();
-      var u = new w.SpeechSynthesisUtterance(String(text).replace(/<[^>]+>/g, ""));
-      u.lang = "zh-CN";
-      if (voice) u.voice = voice;
-      var st1 = currentStyle();
-      u.rate = (typeof opt.rate === "number") ? opt.rate : (st1 ? st1.rate : 0.95);
-      u.pitch = (typeof opt.pitch === "number") ? opt.pitch : (st1 ? st1.pitch : 1.15);
-      // 读完记下真实时长 → 校准估算（下次更准）
-      var t0 = nowMs(), plain = String(text);
-      u.onend = function () { calibrate(plain, nowMs() - t0, u.rate, false); };
-      u.onerror = function () {};
-      w.speechSynthesis.speak(u);
-    } catch (e) {}
+      var l = en ? enList() : zhList();
+      return !!(l && l.length);
+    } catch (e) { return false; }
   }
-
-  /* ---------- 待读队列补读（手机端语音延迟/需手势解锁） ---------- */
-  function flush(kind) {
-    if (flushing) return;
-    var q = kind === "en" ? pendEn : pendZh;
-    if (!q.length) return;
-    flushing = true;
-    var one = q.shift();
-    if (kind === "en") speakEn(one.t, one.o); else speak(one.t, one.o);
-    setTimeout(function () { flushing = false; flush(kind); }, 60);
-  }
-  function flushAll() { pickVoice(); flush("zh"); flush("en"); }
-
-  /* ---------- 顺序播报：用于"把整篇内容读完" ---------- */
-  var seqRunning = false;
-  function seq(list) {
-    if (!list || !list.length) return;
-    if (seqRunning) { try { w.speechSynthesis.cancel(); } catch (e) {} stopCloud(); }
-    seqRunning = true;
-    var i = 0;
-    (function step() {
-      if (i >= list.length) { seqRunning = false; return; }
-      var item = list[i++];
-      if (typeof item === "function") { item(step); return; }
-      var txt = (item && typeof item === "object") ? item.t : item;
-      var isEn = (item && typeof item === "object") ? !!item.en : false;
-      var done = false;
-      var onend = function () { if (done) return; done = true; setTimeout(step, 120); };
-      // 云端嗓音：中文段整段交给云端队列（自动切句）
-      var cv1 = isEn ? null : currentCloud();
-      if (cv1 && cv1.tl !== "en") {
-        try { w.speechSynthesis.cancel(); } catch (e2) {}
-        playCloud(txt, cv1, {}, function () {
-          // 云端失败 → 本机读这一段再继续
-          try {
-            w.speechSynthesis.cancel();
-            var u2 = new w.SpeechSynthesisUtterance(String(txt).replace(/<[^>]+>/g, ""));
-            u2.lang = "zh-CN"; if (voice) u2.voice = voice; u2.rate = 0.95;
-            u2.onend = onend; u2.onerror = onend;
-            w.speechSynthesis.speak(u2);
-            setTimeout(onend, Math.max(2600, String(txt).length * 340));
-          } catch (e3) { onend(); }
-        });
-        return;
+  // 兜底的联网嗓音（只在本次使用，不写进 Store）
+  function autoCloudOf(en) { return cloudGet(en ? "yd-en" : "yd-zh"); }
+  function cloudAuto(txt, job, fin) {
+    job.cloudDone = true;                       // 记一下：这条路已经试过，别来回兜圈子
+    var v = autoCloudOf(!!job.en);
+    if (!v) { localSpeak(txt, job, fin); return; }
+    var before = cloudFail;
+    cloudSeq(txt, v, function () {
+      // 联网也没响（断网/接口被拦）→ 本机再试一次，两条路都试过才放弃
+      if (cloudFail > before) {
+        silent++;
+        if (silent >= 3) failTip();
+        if (supported()) { localSpeak(txt, job, fin); return; }
       }
-      try {
-        if ("speechSynthesis" in w) {
-          w.speechSynthesis.cancel();
-          var u = new w.SpeechSynthesisUtterance(String(txt).replace(/<[^>]+>/g, ""));
-          if (isEn) { u.lang = "en-US"; if (enVoice) u.voice = enVoice; u.rate = 0.85; }
-          else { u.lang = "zh-CN"; if (voice) u.voice = voice; u.rate = 0.95; }
-          u.onend = onend; u.onerror = onend;
-          w.speechSynthesis.speak(u);
-          setTimeout(onend, Math.max(2600, String(txt).length * 340)); // 兜底：老内核不触发 onend
-          return;
-        }
-      } catch (e) {}
-      onend();
+      fin();
+    });
+  }
+  function cloudSeq(text, v, done) {
+    var segs = cloudSplit(text), i = 0;
+    if (!segs.length) { done(); return; }
+    (function nx() {
+      if (i >= segs.length) { done(); return; }
+      var seg = segs[i++];
+      var a = cloudAudio();
+      if (!a) { done(); return; }
+      var over = false, tries = 0;
+      function go() { if (over) return; over = true; setTimeout(nx, 80); }
+      var t0 = nowMs();
+      a.onended = function () { cloudOK = true; calibrate(seg, nowMs() - t0, 1, isEnText(seg)); go(); };
+      a.onerror = function () { cloudFail++; go(); };
+      // 联网发音需要用户先点过页面（浏览器自动播放策略）：没点过就隔 0.6 秒重试，直到用户点一下
+      function fire() {
+        try {
+          a.src = cloudUrl(v, seg);
+          var p = a.play();
+          if (p && p.catch) p.catch(function () {
+            cloudFail++;
+            if (!unlocked && tries++ < 10) { setTimeout(fire, 600); return; }
+            go();
+          });
+        } catch (e2) { cloudFail++; go(); }
+      }
+      fire();
+      setTimeout(go, 12000);            // 网络卡住兜底
     })();
   }
+  function localSpeak(txt, job, fin) {
+    if (!supported()) { cloudAuto(txt, job, fin); return; }
+    if (!voice && !job.en) pickVoice();
+    if (!enVoice && job.en) pickVoice();
+    var vs = job.en ? enVoice : voice;
+    if (job.vname) { var vv = byName(job.en ? enList() : zhList(), job.vname); if (vv) vs = vv; }
+    if (!vs) {                          // 嗓音列表异步返回，等一会儿
+      var n = 0;
+      (function wait() {
+        pickVoice();
+        vs = job.en ? enVoice : voice;
+        if (job.vname) { var vv2 = byName(job.en ? enList() : zhList(), job.vname); if (vv2) vs = vv2; }
+        if (vs) { localSpeak(txt, job, fin); return; }
+        if (++n > 40) { cloudAuto(txt, job, fin); return; }
+        setTimeout(wait, 100);
+      })();
+      return;
+    }
+    var u;
+    try { u = new w.SpeechSynthesisUtterance(txt); } catch (e) { cloudAuto(txt, job, fin); return; }
+    u.lang = job.en ? "en-US" : "zh-CN";
+    u.voice = vs;
+    var st1 = currentStyle();
+    var rate = (job.opt && typeof job.opt.rate === "number") ? job.opt.rate : (st1 ? st1.rate : (job.en ? 0.85 : 0.95));
+    var pitch = (job.opt && typeof job.opt.pitch === "number") ? job.opt.pitch : (st1 ? st1.pitch : (job.en ? 1.0 : 1.15));
+    u.rate = rate; u.pitch = pitch;
+    var started = false, t0 = nowMs();
+    u.onstart = function () { started = true; localFail = 0; };
+    u.onend = function () { calibrate(txt, nowMs() - t0, rate, job.en); fin(); };
+    u.onerror = function () { fin(); };
+    try { w.speechSynthesis.speak(u); } catch (e2) { cloudAuto(txt, job, fin); return; }
+    // 看门狗①：被吞（既没 onstart 也没在说）→ 重试一次，再失败转联网发音
+    setTimeout(function () {
+      if (started) return;
+      var sp = false;
+      try { sp = w.speechSynthesis.speaking || w.speechSynthesis.pending; } catch (e3) {}
+      if (sp) return;
+      localFail++;
+      job.retry = (job.retry || 0) + 1;
+      try { w.speechSynthesis.cancel(); } catch (e4) {}
+      gate = nowMs() + 200;
+      if (job.cloudDone) { fin(); return; }      // 本机+联网都试过了，放弃，别死循环
+      if (job.retry === 1 && !localDead) {
+        setTimeout(function () { localSpeak(txt, job, fin); }, 280);
+      } else {
+        localDead = true;
+        cloudAuto(txt, job, fin);
+      }
+    }, 1500);
+    // 看门狗②：最长保护时间（老内核不触发 onend 也不至于卡死队列）
+    setTimeout(fin, Math.max(9000, estimate(txt, { rate: rate }) * 2.5 + 5000));
+  }
 
-  /* ---------- 自动读题（受全站"自动朗读"开关控制） ---------- */
+  function speak(text, opt) { push({ t: text, en: false, opt: opt }); }
+  function speakLocal(text, opt) { push({ t: text, en: false, opt: opt, local: true }); }
+
+  /* ---------- 补读（手机端语音延迟 / 需要手势解锁） ---------- */
+  function flush() { pickVoice(); pump(); }
+  function flushAll() { pickVoice(); pump(); }
+
+  /* ---------- 顺序播报：题干 → 选项，一句接一句，绝不互相掐断 ---------- */
+  function seq(list) {
+    if (!list || !list.length) return;
+    stopAll();                                  // 新的一轮开始，旧的让位
+    var i, it, t, en;
+    for (i = 0; i < list.length; i++) {
+      it = list[i];
+      if (typeof it === "function") { Q.push({ fn: it }); continue; }
+      t = (it && typeof it === "object") ? it.t : it;
+      en = (it && typeof it === "object") ? !!it.en : false;
+      Q.push({ t: t, en: en, opt: null });
+    }
+    pump();
+  }
+
+  /* ---------- 自动读题（受全站「自动朗读」开关控制） ---------- */
   function autoRead(text, opt) {
     if (!App.Store || !App.Store.state || !App.Store.state.autoRead) return;
     if (!text) return;
-    setTimeout(function () { speak(text, opt); }, 250);
+    setTimeout(function () { push({ t: text, en: false, opt: opt }); }, 250);
   }
+
+  /* ---------- 声音自检：告诉用户「现在到底能不能出声」 ---------- */
+  function diag() {
+    var zs = zhList(), es = enList(), sp = supported(), cvv = currentCloud();
+    var using = (!sp || localDead || !zs.length) ? "云端" : "本机";
+    var note;
+    if (!sp) note = "这个浏览器没有内置语音引擎，已自动改用联网发音";
+    else if (localDead) note = "本机语音叫不醒（浏览器把声音吞了），已自动改用联网发音";
+    else if (!zs.length) note = "这台设备没装中文语音包，已自动改用联网发音";
+    else if (cvv) note = "当前用「" + cvv.name + "」联网发音";
+    else note = "当前用本机「" + (voice ? voice.name : "默认嗓音") + "」发音";
+    return {
+      supported: sp,
+      voices: sp ? ((w.speechSynthesis.getVoices() || []).length) : 0,
+      zh: zs.length, en: es.length,
+      zhVoice: voice ? voice.name : "", enVoice: enVoice ? enVoice.name : "",
+      localDead: localDead, cloudOk: cloudOK, cloudFail: cloudFail,
+      cloud: cvv ? cvv.id : "", using: using, note: note
+    };
+  }
+  // 自检发声：念一句测试话，念完把结果回传给面板
+  function selfTest(cb) {
+    push({
+      t: "声音自检开始，一二三，你听到了吗？", en: false, opt: null,
+      cb: function () { if (cb) { try { cb(diag()); } catch (e) {} } }
+    });
+  }
+  // 面板用：强制回到本机语音（并把「本机失效」标记清掉）
+  function useLocal() {
+    if (App.Store && App.Store.state) { App.Store.state.voiceCloud = ""; App.Store.save(); }
+    localFail = 0; localDead = false;
+  }
+  // 面板用：一键改用联网发音
+  function useCloud(id) {
+    if (App.Store && App.Store.state) { App.Store.state.voiceCloud = id || "yd-zh"; App.Store.save(); }
+  }
+
 
   /* ---------- WebAudio 音效（无需外部文件） ---------- */
   var AC = null;
@@ -536,7 +671,11 @@
   }
   // 移动端（微信/QQ/钉钉）需用户手势后才能出声：首次触摸/点击/按键解锁并补读待读队列
   (function unlock() {
-    function fn() { flushAll(); var c = ac(); if (c && c.state === "suspended") { try { c.resume(); } catch (e) {} } }
+    function fn() {
+      unlocked = true;                 // 浏览器允许自动播放了，联网发音可以出声
+      flushAll();
+      var c = ac(); if (c && c.state === "suspended") { try { c.resume(); } catch (e) {} }
+    }
     w.document.addEventListener("touchstart", fn, { passive: true });
     w.document.addEventListener("pointerdown", fn);
     w.document.addEventListener("click", fn);
@@ -563,13 +702,23 @@
   };
 
   // 立刻停掉正在播放的一切（本机朗读 + 云端队列）
+  // 真正要打断时才 cancel：cancel 后留 200ms 静默期，避免下一条被吞
   function stopAll() {
+    Q = [];
     try { if ("speechSynthesis" in w) w.speechSynthesis.cancel(); } catch (e) {}
+    try { if (CA) CA.pause(); } catch (e2) {}
+    gate = nowMs() + 200;
     stopCloud();
   }
+  function speaking() { return busy || Q.length > 0; }
 
   App.Speech = {
     stop: stopAll,
+    speaking: speaking,
+    diag: diag,
+    selfTest: selfTest,
+    useLocal: useLocal,
+    useCloud: useCloud,
     hasZhVoice: hasZhVoice,
     defaultZhMissing: defaultZhMissing,
     defaultZhName: function () { return ZH_DEFAULT[0]; },
