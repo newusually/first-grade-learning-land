@@ -12,12 +12,24 @@
     if (!host) return;
     var name = host.getAttribute("data-view") || "";
     var def = (App.views && App.views[name]) || null;
-    if (!def || !w.Vue) {
-      host.innerHTML = "<div class='wrap'><div class='card'>😢 页面「" + name + "」加载失败，请刷新重试。</div></div>";
+    var oldKernel = /old-kernel/.test(document.documentElement.className || "");
+    if (!w.Vue) {
+      host.innerHTML = "<div class='wrap'><div class='card'>" +
+        (oldKernel
+          ? "😢 当前浏览器内核太旧，跑不动 Vue 3 渲染引擎。请升级浏览器（推荐 Chrome / Edge / Safari 最新版），或用手机微信默认浏览器打开。"
+          : "😢 页面「" + name + "」加载失败，请刷新重试。") +
+        "</div></div>";
+      return;
+    }
+    if (!def) {
+      host.innerHTML = "<div class='wrap'><div class='card'>😢 页面「" + name + "」还没做好，先去别的小天地玩吧！</div></div>";
       return;
     }
     var app = w.Vue.createApp(def);
     if (App.Shell) app.component("site-shell", App.Shell);
+    app.config.errorHandler = function (err) {
+      if (w.console && w.console.warn) w.console.warn("[view]", name, err && err.message);
+    };
     app.mount(host);
   }
 
