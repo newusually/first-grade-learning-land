@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>看图学应用 - 一年级趣味学习乐园</title>
+<link rel="stylesheet" href="assets/css/base/reset.css">
+<link rel="stylesheet" href="assets/css/base/layout.css">
+<link rel="stylesheet" href="assets/css/components/ui.css">
+<link rel="stylesheet" href="assets/css/components/quiz.css">
+<link rel="stylesheet" href="assets/css/compat.css">
+<script>
+(function () {
+  var h = document.documentElement;
+  var d = document.createElement('div').style;
+  if (!('flexWrap' in d) && !('WebkitFlexWrap' in d)) h.className += ' no-flex';
+  if (typeof Promise === 'undefined' || typeof Function.prototype.bind === 'undefined') h.className += ' old-kernel';
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><span class="emj">🍎</span>看图学应用</div>
+    <a class="btn spk" href="主页.html">🏠 主页</a>
+  </div>
+
+  <nav class="nav">
+    <a href="主页.html"><span class="emj">🏠</span>主页</a>
+    <a href="口算动画课堂.html"><span class="emj">🧮</span>口算</a>
+    <a class="active" href="看图学应用.html"><span class="emj">🍎</span>看图应用</a>
+    <a href="数学测试卷.html"><span class="emj">📝</span>数学</a>
+    <a href="语文测试卷.html"><span class="emj">🔤</span>语文</a>
+    <a href="成长小课堂.html"><span class="emj">🛡️</span>成长</a>
+    <a href="语文学习.html"><span class="emj">📚</span>语文学习</a>
+    <a href="巩固练习.html"><span class="emj">🎯</span>巩固</a>
+  </nav>
+
+  <div class="page-title">🍎 看图学应用</div>
+  <div class="page-sub">看图列式，解决生活中的小问题</div>
+
+  <div class="scorebar">
+    <span class="score">得分：<b id="sc">0</b></span>
+    <button class="btn spk" id="spkBtn">🔊 再读一题</button>
+  </div>
+
+  <div class="card" id="card">
+    <div style="text-align:center;margin-bottom:8px">
+      <button class="lv on" data-lv="1">🌱 简单</button>
+      <button class="lv" data-lv="2">🌿 一般</button>
+      <button class="lv" data-lv="3">🌳 挑战</button>
+    </div>
+    <div class="qno" id="qno">准备中…</div>
+    <div class="qtext" id="qtext"></div>
+    <div class="scene" id="scene"></div>
+    <div class="eqshow" id="eq"></div>
+    <div class="verdict" id="vd"></div>
+    <div id="ansarea"></div>
+  </div>
+
+  <div class="footer">答错也没关系，会告诉你解题小窍门哦～</div>
+</div>
+
+<script src="assets/js/core/compat.js"></script>
+<script src="assets/js/core/config.js"></script>
+<script src="assets/js/core/utils.js"></script>
+<script src="assets/js/features/images.js"></script>
+<script src="assets/js/features/speech.js"></script>
+<script src="assets/js/features/banks.js"></script>
+<script src="assets/js/features/content-problems.js"></script>
+<script src="assets/js/features/content-math.js"></script>
+<script src="assets/js/features/content-chinese.js"></script>
+<script src="assets/js/features/content-chinese-learn.js"></script>
+<script src="assets/js/features/content-social.js"></script>
+<script src="assets/js/features/abacus.js"></script>
+<script src="assets/js/pages/problems-page.js"></script>
+</body>
+</html>

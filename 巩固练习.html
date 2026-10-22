@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>薄弱点巩固 - 一年级趣味学习乐园</title>
+<link rel="stylesheet" href="assets/css/base/reset.css">
+<link rel="stylesheet" href="assets/css/base/layout.css">
+<link rel="stylesheet" href="assets/css/components/ui.css">
+<link rel="stylesheet" href="assets/css/components/quiz.css">
+<link rel="stylesheet" href="assets/css/compat.css">
+<script>
+(function () {
+  var h = document.documentElement;
+  var d = document.createElement('div').style;
+  if (!('flexWrap' in d) && !('WebkitFlexWrap' in d)) h.className += ' no-flex';
+  if (typeof Promise === 'undefined' || typeof Function.prototype.bind === 'undefined') h.className += ' old-kernel';
+})();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><span class="emj">🎯</span>薄弱点巩固</div>
+    <a class="btn spk" href="主页.html">🏠 主页</a>
+  </div>
+
+  <nav class="nav">
+    <a href="主页.html"><span class="emj">🏠</span>主页</a>
+    <a href="口算动画课堂.html"><span class="emj">🧮</span>口算</a>
+    <a href="看图学应用.html"><span class="emj">🍎</span>看图应用</a>
+    <a href="数学测试卷.html"><span class="emj">📝</span>数学</a>
+    <a href="语文测试卷.html"><span class="emj">🔤</span>语文</a>
+    <a href="成长小课堂.html"><span class="emj">🛡️</span>成长</a>
+    <a href="语文学习.html"><span class="emj">📚</span>语文学习</a>
+    <a class="active" href="巩固练习.html"><span class="emj">🎯</span>巩固</a>
+  </nav>
+
+  <div class="page-title">🎯 薄弱点巩固练习</div>
+  <div class="page-sub">专攻你常错的题，越练越牢固！</div>
+
+  <div class="scorebar">
+    <span class="score">得分：<b id="sc">0</b></span>
+    <button class="btn spk" id="spkBtn">🔊 再读一题</button>
+  </div>
+
+  <div class="card" id="card">
+    <div id="startWrap">
+      <div id="weakBox"></div>
+      <div class="ctr">
+        <button class="btn bigbtn" id="startBtn">🎯 开始巩固薄弱点</button>
+        <button class="btn next" id="startAllBtn">🌈 综合练习</button>
+        <button class="btn spk" id="clearBtn">🧹 清空记录</button>
+      </div>
+    </div>
+
+    <div id="quizWrap" style="display:none">
+      <div class="qno" id="qno">准备中…</div>
+      <div class="qtext" id="qtext"></div>
+      <div id="passageBox"></div>
+      <div class="scene" id="scene"></div>
+      <div id="body2"></div>
+      <div class="eqshow" id="eq"></div>
+      <div class="verdict" id="vd"></div>
+      <div id="ansarea"></div>
+    </div>
+  </div>
+
+  <div class="footer">系统会自动记住你常错的题，在这里重点练习～</div>
+</div>
+
+<script src="assets/js/core/compat.js"></script>
+<script src="assets/js/core/config.js"></script>
+<script src="assets/js/core/utils.js"></script>
+<script src="assets/js/features/images.js"></script>
+<script src="assets/js/features/speech.js"></script>
+<script src="assets/js/features/banks.js"></script>
+<script src="assets/js/features/content-problems.js"></script>
+<script src="assets/js/features/content-math.js"></script>
+<script src="assets/js/features/content-chinese.js"></script>
+<script src="assets/js/features/content-chinese-learn.js"></script>
+<script src="assets/js/features/content-social.js"></script>
+<script src="assets/js/features/abacus.js"></script>
+<script src="assets/js/pages/review-page.js"></script>
+</body>
+</html>
