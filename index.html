@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>一年级趣味学习乐园 · 主页</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; font-family: "Microsoft YaHei","PingFang SC",sans-serif; color: #333;
+         background: linear-gradient(160deg,#8ec9ff 0%,#c6b3f5 35%,#ffb9d4 70%,#ffe29a 100%);
+         overflow-x: hidden; display: flex; flex-direction: column; align-items: center; }
+
+  /* ---------- 动态背景 ---------- */
+  .sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .sun { position: absolute; top: 4%; left: 6%; font-size: 58px; animation: spin 30s linear infinite; }
+  .moon { position: absolute; top: 8%; right: 8%; font-size: 40px; animation: float 5s ease-in-out infinite; }
+  .cloud { position: absolute; opacity: .9; animation: drift linear infinite; }
+  .k1 { top: 12%; font-size: 40px; animation-duration: 46s; }
+  .k2 { top: 30%; font-size: 28px; animation-duration: 64s; animation-delay: -25s; }
+  .k3 { top: 55%; font-size: 22px; animation-duration: 80s; animation-delay: -50s; }
+  .balloon { position: absolute; font-size: 30px; animation: rise 14s ease-in infinite; }
+  .b1 { left: 12%; animation-delay: 0s; } .b2 { left: 80%; animation-delay: 6s; }
+  .butterfly { position: absolute; font-size: 24px; animation: fly 20s ease-in-out infinite; }
+  .bird { position: absolute; font-size: 20px; animation: fly 26s ease-in-out infinite reverse; }
+  .star { position: absolute; font-size: 16px; animation: tw 2.6s ease-in-out infinite; }
+  .grass { position: fixed; left:0; right:0; bottom:0; height:36px; font-size:22px; line-height:36px;
+           white-space:nowrap; overflow:hidden; z-index:0; opacity:.95; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes drift { from { left:-10%; } to { left:110%; } }
+  @keyframes rise { from { bottom:-60px; transform:translateX(0) rotate(-4deg); }
+                    50% { transform:translateX(30px) rotate(4deg); }
+                    to { bottom:110%; transform:translateX(-10px); } }
+  @keyframes fly { 0%{transform:translate(0,0)} 25%{transform:translate(28vw,-40px) rotate(6deg)}
+                   50%{transform:translate(55vw,20px) rotate(-5deg)} 75%{transform:translate(20vw,-15px) rotate(4deg)}
+                   100%{transform:translate(0,0)} }
+  @keyframes tw { 50% { opacity:.15; transform:scale(.7); } }
+  @keyframes float { 50% { transform:translateY(-12px); } }
+
+  /* ---------- 标题 ---------- */
+  .hero { z-index: 2; text-align: center; margin: 34px 16px 6px; }
+  .hero h1 { font-size: 42px; letter-spacing: 6px; color: #fff;
+             text-shadow: 0 3px 0 rgba(120,60,160,.35), 0 8px 20px rgba(0,0,0,.18);
+             animation: titleIn .8s cubic-bezier(.2,1.4,.4,1); }
+  .hero h1 .w { display: inline-block; animation: bounce 2.4s ease-in-out infinite; }
+  .hero h1 .w:nth-child(2n) { animation-delay: .18s; }
+  .hero h1 .w:nth-child(3n) { animation-delay: .32s; }
+  @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  @keyframes titleIn { from { transform: translateY(-60px) scale(.6); opacity: 0; } }
+  .hero p { margin-top: 10px; font-size: 15.5px; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.2);
+            animation: fadein 1s .4s backwards; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(12px); } }
+
+  /* ---------- 卡片 ---------- */
+  .grid { z-index: 2; width: 100%; max-width: 1060px; display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px;
+          padding: 22px 20px 30px; }
+  .card { position: relative; border-radius: 26px; padding: 26px 20px 20px; cursor: pointer;
+          background: rgba(255,255,255,.93); box-shadow: 0 12px 32px rgba(50,30,110,.22);
+          text-decoration: none; color: #333; display: flex; flex-direction: column;
+          transition: transform .25s cubic-bezier(.2,1.4,.4,1), box-shadow .25s;
+          animation: cardIn .7s cubic-bezier(.2,1.4,.4,1) backwards; }
+  .card:nth-child(1) { animation-delay: .15s; }
+  .card:nth-child(2) { animation-delay: .3s; }
+  .card:nth-child(3) { animation-delay: .45s; }
+  .card:nth-child(4) { animation-delay: .6s; }
+  @keyframes cardIn { from { transform: translateY(70px) scale(.85) rotate(-2deg); opacity: 0; } }
+  .card:hover { transform: translateY(-10px) scale(1.03) rotate(.5deg); box-shadow: 0 20px 44px rgba(50,30,110,.3); }
+  .card:active { transform: translateY(-4px) scale(.99); }
+  .icon { font-size: 56px; text-align: center; margin-bottom: 8px;
+          animation: bob 3s ease-in-out infinite; filter: drop-shadow(0 6px 8px rgba(0,0,0,.15)); }
+  .card:nth-child(2) .icon { animation-delay: .5s; }
+  .card:nth-child(3) .icon { animation-delay: 1s; }
+  .card:nth-child(4) .icon { animation-delay: 1.5s; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-8px) rotate(4deg); } }
+  .card h2 { text-align: center; font-size: 21px; margin-bottom: 4px; }
+  .card .en { text-align: center; font-size: 11px; letter-spacing: 2px; color: #aaa; margin-bottom: 10px; }
+  .card .desc { font-size: 13.5px; line-height: 1.75; color: #666; flex: 1; }
+  .card .desc b { color: #444; }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+  .tag { font-size: 11px; border-radius: 999px; padding: 3px 10px; color: #fff; font-weight: 700; }
+  .card .go { margin-top: 14px; text-align: center; border: none; border-radius: 999px; padding: 10px 0;
+              font-size: 15px; font-weight: 700; color: #fff; font-family: inherit; cursor: pointer;
+              transition: transform .15s; }
+  .card:hover .go { animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { transform: scale(1.05); } }
+  .c1 h2 { color: #e67e22; } .c1 { border-top: 6px solid #f5a623; }
+  .c1 .tag { background: #f5a623; } .c1 .go { background: linear-gradient(90deg,#f7b733,#f58524); }
+  .c2 h2 { color: #e74c3c; } .c2 { border-top: 6px solid #ff7b54; }
+  .c2 .tag { background: #ff7b54; } .c2 .go { background: linear-gradient(90deg,#ff9966,#ff5e62); }
+  .c3 h2 { color: #2b6cb0; } .c3 { border-top: 6px solid #54a0ff; }
+  .c3 .tag { background: #54a0ff; } .c3 .go { background: linear-gradient(90deg,#56ccf2,#2f80ed); }
+  .c4 h2 { color: #7b4fc0; } .c4 { border-top: 6px solid #a55eea; }
+  .c4 .tag { background: #a55eea; } .c4 .go { background: linear-gradient(90deg,#a55eea,#8854d0); }
+
+  /* ---------- 使用说明 ---------- */
+  .help { z-index: 2; width: 100%; max-width: 1060px; margin: 0 0 40px; padding: 0 20px; }
+  .helpbox { background: rgba(255,255,255,.92); border-radius: 22px; box-shadow: 0 10px 30px rgba(50,30,110,.18);
+             padding: 22px 26px; animation: fadein 1s .8s backwards; }
+  .helpbox h3 { font-size: 19px; color: #6a3fb0; margin-bottom: 12px; letter-spacing: 2px; }
+  .helpbox h3::before { content: "📌 "; }
+  .helpbox ol { margin-left: 20px; font-size: 14px; line-height: 2; color: #555; }
+  .helpbox ol b { color: #333; }
+  .helpbox .kbd { background: #f1ecfa; border: 1px solid #d8c9f2; border-radius: 6px; padding: 1px 8px;
+                  font-size: 12.5px; color: #6a3fb0; font-weight: 700; }
+  .helpbox .note { margin-top: 10px; font-size: 12.5px; color: #999; }
+  .foot { z-index: 2; color: rgba(255,255,255,.9); font-size: 12.5px; padding-bottom: 46px; text-shadow: 0 1px 2px rgba(0,0,0,.2); }
+
+  /* ---------- AJAX 欢迎横幅 ---------- */
+  #banner { z-index: 2; margin: 12px auto 0; background: rgba(255,255,255,.85); border-radius: 999px;
+            padding: 7px 20px; font-size: 13.5px; color: #7b4fc0; font-weight: 700;
+            box-shadow: 0 3px 10px rgba(0,0,0,.1); animation: fadein 1s .6s backwards; }
+</style>
+</head>
+<body>
+<div class="sky">
+  <div class="sun">☀️</div><div class="moon">🌙</div>
+  <div class="cloud k1">☁️</div><div class="cloud k2">☁️</div><div class="cloud k3">☁️</div>
+  <div class="balloon b1">🎈</div><div class="balloon b2">🎈</div>
+  <div class="butterfly">🦋</div><div class="bird">🕊️</div>
+  <div class="star" style="top:20%;left:40%">✨</div><div class="star" style="top:38%;left:85%;animation-delay:.8s">⭐</div>
+  <div class="star" style="top:60%;left:15%;animation-delay:1.3s">✨</div>
+</div>
+<div class="grass">🌿🌷🌿🌸🌿🌼🌿🌷🌿🌿🌸🌿🌼🌿🌷🌿🌸🌿🌼🌿🌿🌷🌿🌸🌿</div>
+
+<div class="hero">
+  <h1><span class="w">一</span><span class="w">年</span><span class="w">级</span><span class="w">趣</span><span class="w">味</span><span class="w">学</span><span class="w">习</span><span class="w">乐</span><span class="w">园</span></h1>
+  <p>✨ 口算动画 · 看图应用 · 数学 · 语文 —— 四大闯关乐园，点卡片开始学习吧！✨</p>
+  <div id="banner">正在加载今日寄语…</div>
+</div>
+
+<div class="grid">
+  <a class="card c1" href="口算动画课堂.html">
+    <div class="icon">🎬</div>
+    <h2>口算动画课堂</h2>
+    <div class="en">MATH ANIMATION</div>
+    <div class="desc">
+      <b>加法、减法、凑十法</b>全程动画演示：表情图形逐个弹入、大括号画出来、逐个点数报数、答案揭晓撒彩带！
+      支持 <b>10＋7</b>、数字范围 1–20，四国语言＋语音朗读，带音效和动态背景。
+    </div>
+    <div class="tags"><span class="tag">动画演示</span><span class="tag">凑十法</span><span class="tag">语音</span><span class="tag">多语言</span></div>
+    <div class="go">🎬 进入课堂 →</div>
+  </a>
+
+  <a class="card c2" href="看图学应用.html">
+    <div class="icon">📐</div>
+    <h2>看图学应用</h2>
+    <div class="en">WORD PROBLEMS</div>
+    <div class="desc">
+      <b>看图应用题闯关</b>：两组相加、划走求剩、求总数、求部分、两步连加连减、序数排队题。
+      每道题配表情图动画＋语音读题，答对加分撒彩带，答错有提示。三个难度可选，每轮 10 题随机出题！
+    </div>
+    <div class="tags"><span class="tag">随机出题</span><span class="tag">应用题</span><span class="tag">闯关</span><span class="tag">语音读题</span></div>
+    <div class="go">📐 开始闯关 →</div>
+  </a>
+
+  <a class="card c3" href="数学测试卷.html">
+    <div class="icon">📝</div>
+    <h2>数学测试卷</h2>
+    <div class="en">MATH TEST</div>
+    <div class="desc">
+      <b>随机生成测试卷</b>：口算、比大小、看图列式、填空数序、解决问题、找规律和排队思考题。
+      每次测试 12 题都不一样，语音自动读题，做完自动评分、亮星星，测完可再换一张新卷子。
+    </div>
+    <div class="tags"><span class="tag">随机组卷</span><span class="tag">自动评分</span><span class="tag">语音读题</span><span class="tag">思考题</span></div>
+    <div class="go">📝 开始测试 →</div>
+  </a>
+
+  <a class="card c4" href="语文测试卷.html">
+    <div class="icon">📖</div>
+    <h2>语文测试卷</h2>
+    <div class="en">CHINESE TEST</div>
+    <div class="desc">
+      <b>拼音写词、选读音、数笔画、量词、课文填空、反义词连线、阅读理解、看图说话</b>八大题型随机组合。
+      点击选项即判对错，反义词动手连一连，看图说话练表达，全程语音朗读。
+    </div>
+    <div class="tags"><span class="tag">八大题型</span><span class="tag">连线互动</span><span class="tag">看图说话</span><span class="tag">语音</span></div>
+    <div class="go">📖 开始测试 →</div>
+  </a>
+</div>
+
+<div class="help"><div class="helpbox">
+  <h3>使用说明</h3>
+  <ol>
+    <li><b>点击上面任意一张卡片</b>即可进入对应练习页面；每个页面右上角都有 <span class="kbd">🏠 返回主页</span> 按钮，可以随时回到这里。</li>
+    <li><b>口算动画课堂</b>：先选模式（加法 / 减法 / 凑十法），调好两个数，点「开始」观看动画讲解，可切换中文 / English / 日本語 / Español，🔊 是语音讲解、🔔 是音效。</li>
+    <li><b>看图学应用</b>：先选难度（10 以内 / 20 以内不进位 / 进位退位挑战 / 混合闯关），听语音读题 → 看图理解 → 填答案 → 点「检查」。</li>
+    <li><b>数学测试卷</b>：随机 12 题，比大小题直接点 <span class="kbd">＞ ＜ ＝</span> 按钮，其他题输入数字后回车或点「检查」。</li>
+    <li><b>语文测试卷</b>：全部为点击选择题和连线题，看图说话题大声说出口后点「说好啦」即可得分。</li>
+    <li>所有页面都能<b>离线使用</b>：文件下载后双击用浏览器打开即可（推荐 Edge / Chrome，语音效果最佳）。</li>
+  </ol>
+  <div class="note">💡 进阶：想自定义题目？在网页同目录建一个 <span class="kbd">题库</span> 文件夹，放入对应的 JSON 文件（看图应用题.json / 数学测试卷.json / 语文测试卷.json），页面会通过 AJAX 自动优先加载你的题库；没有就用内置题库。</div>
+</div></div>
+
+<div class="foot">🎒 一年级趣味学习乐园 · 适合 6-7 岁 · 鼓励式学习，答案对了有彩带哦 🎉</div>
+
+<script>
+/* AJAX：加载今日寄语（可选自定义 ./banner.txt），失败用内置寄语轮换 */
+const FALLBACK=["今天也要加油哦！","学习使我最快乐！","每天进步一点点！","我是识字小达人！","口算大王就是我！"];
+fetch('./banner.txt').then(r=>r.ok?r.text():Promise.reject()).catch(()=>null)
+  .then(t=>{ const s=(t&&t.trim())?t.trim().split('\n')[0]:FALLBACK[new Date().getDate()%FALLBACK.length];
+    document.getElementById('banner').textContent='🌟 '+s+' 🌟'; });
+</script>
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>语文测试卷 · 一年级上册</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { min-height: 100vh; font-family: "KaiTi","楷体","Microsoft YaHei",sans-serif;
+         background: linear-gradient(160deg,#e7ddff 0%,#ffeef5 55%,#fff8d9 100%);
+         color: #333; display:flex; flex-direction:column; align-items:center; overflow-x:hidden; }
+  .sky { position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .moon { position:absolute; top:5%; right:7%; font-size:44px; animation:float 5s ease-in-out infinite; }
+  .star { position:absolute; font-size:18px; opacity:.8; animation:tw 2.4s ease-in-out infinite; }
+  @keyframes float { 50% { transform:translateY(-10px); } }
+  @keyframes tw { 50% { opacity:.2; transform:scale(.8); } }
+  .grass { position:fixed; left:0; right:0; bottom:0; height:30px; font-size:20px; line-height:30px;
+           white-space:nowrap; overflow:hidden; z-index:0; opacity:.85; }
+
+  header { z-index:2; width:100%; max-width:920px; padding:12px 16px 4px; display:flex;
+           align-items:center; gap:10px; flex-wrap:wrap; }
+  header h1 { font-size:22px; color:#7b4fc0; letter-spacing:2px; text-shadow:0 2px 0 #fff; flex:1;
+              font-family:"Microsoft YaHei",sans-serif; }
+  .btn { border:none; border-radius:999px; padding:8px 16px; font-size:14px; cursor:pointer;
+         font-family:"Microsoft YaHei",sans-serif; color:#fff; box-shadow:0 3px 0 rgba(0,0,0,.15);
+         transition:transform .15s; }
+  .btn:active { transform:translateY(2px); box-shadow:none; }
+  .btn.home { background:linear-gradient(#8ec5ff,#5a9ee8); }
+  .btn.spk { background:linear-gradient(#ffd36e,#f5a623); }
+  .score { background:#fff; border-radius:999px; padding:6px 14px; font-size:14px; font-weight:700;
+           color:#7b4fc0; box-shadow:0 2px 6px rgba(0,0,0,.08); font-family:"Microsoft YaHei",sans-serif; }
+  .prog { font-size:13px; color:#555; background:#ffffffaa; padding:6px 12px; border-radius:999px;
+          font-family:"Microsoft YaHei",sans-serif; }
+
+  .stage { z-index:2; width:100%; max-width:920px; flex:1; padding:6px 16px 80px; }
+  .card { background:rgba(255,255,255,.95); border-radius:22px; box-shadow:0 10px 30px rgba(120,80,190,.16);
+          padding:22px 24px 20px; margin:0 auto; max-width:620px;
+          animation:cardIn .5s cubic-bezier(.2,1.4,.4,1); font-size:19px; line-height:1.8; }
+  @keyframes cardIn { from { transform:translateY(50px) scale(.9); opacity:0; } }
+  .card.shake { animation:shake .45s; }
+  @keyframes shake { 20%,60% { transform:translateX(-9px);} 40%,80% { transform:translateX(9px);} }
+  .qno { display:inline-block; background:#e8ddff; color:#6a3fb0; font-weight:700; font-size:12px;
+         border-radius:999px; padding:3px 12px; margin-bottom:10px; font-family:"Microsoft YaHei",sans-serif; }
+  .py { font-family:"Arial",sans-serif; font-size:24px; color:#e67e22; letter-spacing:3px; font-weight:700; }
+  .bigword { font-size:64px; text-align:center; margin:6px 0; font-weight:700; }
+  .bigword.written { animation:pop .5s; color:#27ae60; }
+  @keyframes pop { 50% { transform:scale(1.25); } }
+
+  .opts { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; }
+  .opts.c1 { grid-template-columns:1fr; }
+  .opt { border:3px solid #cbb3f0; border-radius:14px; background:#fff; padding:12px 10px;
+         font-size:21px; text-align:center; cursor:pointer; font-family:inherit; transition:all .15s; }
+  .opt:hover { background:#f6f0ff; transform:translateY(-2px); }
+  .opt.ok { border-color:#2ecc71; background:#eafff2; animation:pop .4s; }
+  .opt.no { border-color:#e74c3c; background:#ffefef; }
+  .opt:disabled { cursor:default; }
+
+  /* 连线 */
+  .match { display:flex; justify-content:space-between; padding:0 30px; margin-top:10px; }
+  .match .col { display:flex; flex-direction:column; gap:12px; }
+  .mi { border:3px solid #cbb3f0; border-radius:12px; padding:8px 22px; font-size:24px; cursor:pointer;
+        background:#fff; transition:all .15s; user-select:none; }
+  .mi.sel { border-color:#f5a623; background:#fff4dd; transform:scale(1.08); }
+  .mi.done { border-color:#2ecc71; background:#eafff2; pointer-events:none; }
+  .mi.err { animation:shake .4s; }
+
+  .eqshow { text-align:center; font-size:18px; font-weight:700; color:#27ae60; min-height:26px; margin-top:12px; }
+  .verdict { text-align:center; font-size:19px; font-weight:900; min-height:28px; margin-top:6px;
+             font-family:"Microsoft YaHei",sans-serif; }
+  .verdict.good { color:#27ae60; animation:pop .4s; }
+  .verdict.bad { color:#e74c3c; }
+  .bigbtn { font-size:17px; padding:11px 34px; background:linear-gradient(#b98cf0,#8e5cd9); }
+  .bigbtn.next { background:linear-gradient(#7db9ff,#3f8fe0); }
+  .ctr { text-align:center; margin-top:14px; }
+  .hint { font-size:12px; color:#999; text-align:center; margin-top:8px; font-family:"Microsoft YaHei",sans-serif; }
+
+  .done { text-align:center; padding:40px 20px; }
+  .done .medal { font-size:70px; animation:pop .6s; }
+  .done h2 { color:#7b4fc0; margin:10px 0; font-family:"Microsoft YaHei",sans-serif; }
+  .done p { color:#666; margin-bottom:18px; }
+  .confetti { position:fixed; top:-30px; z-index:99; font-size:22px; pointer-events:none;
+              animation:fall linear forwards; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); opacity:.8; } }
+</style>
+</head>
+<body>
+<div class="sky"><div class="moon">🌙</div>
+  <div class="star" style="top:14%;left:12%">⭐</div><div class="star" style="top:24%;left:70%;animation-delay:1s">✨</div>
+  <div class="star" style="top:40%;left:30%;animation-delay:.5s">⭐</div><div class="star" style="top:8%;left:45%;animation-delay:1.4s">✨</div>
+</div>
+<div class="grass">🌿🌷🌿🌸🌿🌼🌿🌷🌿🌿🌸🌿🌼🌿🌷🌿🌸🌿🌼🌿🌿🌷🌿🌸</div>
+
+<header>
+  <h1>📖 语文测试卷</h1>
+  <span class="score">⭐ <span id="sc">0</span> 分</span>
+  <span class="prog">第 <span id="cur">1</span> / 10 题</span>
+  <button class="btn spk" id="spkBtn">🔊 朗读题目</button>
+  <button class="btn home" onclick="location.href='index.html'">🏠 主页</button>
+  <button class="btn home" onclick="location.href='口算动画课堂.html'">🎬 动画课堂</button>
+</header>
+
+<div class="stage"><div class="card" id="card">
+  <div class="qno" id="qno"></div>
+  <div id="body"></div>
+  <div class="eqshow" id="eq"></div>
+  <div class="verdict" id="vd"></div>
+</div></div>
+
+<script>
+/* AJAX：优先加载外部题库 */
+let EXT=null; fetch('./题库/语文测试卷.json').then(r=>r.ok?r.json():Promise.reject()).then(j=>{EXT=j;}).catch(()=>{});
+
+let voice=null;
+function pickVoice(){ const vs=speechSynthesis.getVoices();
+  voice=vs.find(v=>v.lang.startsWith('zh')&&/Xiaoxiao|Yunxi|Huihui/.test(v.name))||vs.find(v=>v.lang.startsWith('zh'))||null; }
+pickVoice(); speechSynthesis.onvoiceschanged=pickVoice;
+function speak(t){ try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(String(t).replace(/<[^>]+>/g,''));
+  u.lang='zh-CN'; if(voice)u.voice=voice; u.rate=.85; u.pitch=1.2; speechSynthesis.speak(u);}catch(e){} }
+function confetti(n=26){ const es=['🎉','⭐','🌟','✨','🎊','📖'];
+  for(let i=0;i<n;i++){ const d=document.createElement('div'); d.className='confetti';
+    d.textContent=es[Math.random()*es.length|0]; d.style.left=Math.random()*100+'vw';
+    d.style.animationDuration=(1.6+Math.random()*1.6)+'s'; d.style.animationDelay=(Math.random()*.5)+'s';
+    document.body.appendChild(d); setTimeout(()=>d.remove(),3800);} }
+const R=(x,y)=>Math.floor(Math.random()*(y-x+1))+x;
+const pick=a=>a[Math.random()*a.length|0];
+const PRAISE=["答对啦，真棒！","太厉害了！","完全正确！","你真是语文小达人！"];
+const CHEER=["没关系，再想一想哦。","差一点点，加油！","再读一读，试一次！"];
+
+/* ================= 题库（每类抽 2 题，共 10 题） ================= */
+const BANK_PINYIN=[ // 拼音 → 选词
+  {py:"tiān shàng",w:"天上"},{py:"bái yún",w:"白云"},{py:"xiǎo niǎo",w:"小鸟"},
+  {py:"dà xiǎo",w:"大小"},{py:"ér zi",w:"儿子"},{py:"xià yǔ",w:"下雨"},
+  {py:"shuǐ niú",w:"水牛"},{py:"mù mǎ",w:"木马"},{py:"rì yuè",w:"日月"},
+  {py:"xiǎo shān",w:"小山"},{py:"dà huǒ",w:"大火"},{py:"shàng xià",w:"上下"},
+  {py:"dà rén",w:"大人"},{py:"shuǐ tián",w:"水田"},{py:"shān shí",w:"山石"},{py:"mù tou",w:"木头"}];
+const BANK_DUOYIN=[ // 多音字/易错音
+  {w:"长（　）大",opts:["zhǎng","cháng"],a:0,say:"长大的长，读第几声？选 zhǎng 还是 cháng？"},
+  {w:"数（　）一数",opts:["shǔ","shù"],a:0,say:"数一数的数，选 shǔ 还是 shù？"},
+  {w:"一（　）只鸟",opts:["yī","yì"],a:1,say:"一只鸟的一，选 yī 还是 yì？"},
+  {w:"朋（　）友",opts:["péng","pén"],a:0,say:"朋友的朋，选 péng 还是 pén？"},
+  {w:"水（　）牛",opts:["shuǐ","suǐ"],a:0,say:"水牛的水，选 shuǐ 还是 suǐ？"},
+  {w:"太（　）阳",opts:["tài","dài"],a:0,say:"太阳的太，选 tài 还是 dài？"}];
+const BANK_STROKES=[ // 数笔画
+  {w:"月",n:4},{w:"水",n:4},{w:"书",n:4},{w:"鸟",n:5},{w:"火",n:4},{w:"山",n:3},{w:"田",n:5},{w:"木",n:4},{w:"大",n:3},{w:"天",n:4}];
+const BANK_ANTONYM=[ // 反义词对
+  ["上","下"],["大","小"],["来","去"],["早","晚"],["多","少"],["天","地"],["开","关"],["出","入"]];
+const BANK_LIANGCI=[ // 量词
+  {w:"一（　）小鸟",opts:["只","头","本"],a:0},{w:"一（　）黄牛",opts:["个","头","条"],a:1},
+  {w:"一（　）书",opts:["本","朵","只"],a:0},{w:"一（　）花",opts:["朵","头","本"],a:0},
+  {w:"一（　）鱼",opts:["条","个","本"],a:0},{w:"一（　）人",opts:["个","朵","头"],a:0}];
+const BANK_KEWEN=[ // 课文填空（选择）
+  {q:"一去二三里，烟村（　）（　）家。",opts:["四五","六七","二三"],a:0,say:"一去二三里，烟村几家？"},
+  {q:"弯弯的月儿（　　）的船。",opts:["小小","大大","圆圆"],a:0,say:"弯弯的月儿是什么样的船？"},
+  {q:"春去（　）还在，人来鸟不惊。",opts:["花","草","山"],a:0,say:"春去什么还在？"},
+  {q:"床前明月（　），疑是地上霜。",opts:["光","亮","白"],a:0,say:"床前明月什么？"},
+  {q:"鹅，鹅，鹅，曲项向（　）歌。",opts:["天","水","山"],a:0,say:"曲项向什么歌？"}];
+const BANK_READING={ // 阅读理解
+  passage:"小白兔和小灰兔去采蘑菇。天上<b>下</b>起了小雨，它们<b>躲</b>到大树下。小白兔把自己的<b>伞</b>给小灰兔，两只小兔都没有<b>淋</b>湿。",
+  say:"读一读：小白兔和小灰兔去采蘑菇。天上打起了小雨，它们躲到大树下。小白兔把自己的伞给小灰兔，两只小兔都没有淋湿。",
+  qs:[
+    {q:"下雨了，它们躲到了什么下面？",opts:["大树下","屋子里","山上"],a:0},
+    {q:"谁把伞给了小灰兔？",opts:["小白兔","小灰兔","小鸟"],a:0},
+    {q:"两只小兔淋湿了吗？",opts:["没有淋湿","都淋湿了","只有一只淋湿"],a:0}]};
+const BANK_SHUOXIE=[ // 看图写话（口头+语音）
+  {scene:"☀️ 🌳 🐰 🥕 🐢",say:"看图说话：太阳出来了，草地上有小兔子和小乌龟。请你说一说：图上有谁？它们在做什么？心情怎么样？"},
+  {scene:"🌧️ 🐦 🌂 🏠",say:"看图说话：下雨了，小鸟没有伞。请你说一说：小鸟怎么了？谁能帮帮它？"},
+  {scene:"🌳 🐵 🍌 🍌 🍌",say:"看图说话：树上有小猴子，还有三根香蕉。请你说一说：小猴子在做什么？它开心吗？"}];
+
+function shuffled(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=R(0,i); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ---------- 题型构造 ---------- */
+function qPinyin(){ const t=pick(BANK_PINYIN);
+  const wrong=shuffled(BANK_PINYIN.filter(x=>x.w!==t.w)).slice(0,3);
+  const opts=shuffled([t,...wrong]);
+  return {say:`看拼音，选词语：${t.py}。`,tag:"看拼音写词",
+    html:`<div class="py" style="text-align:center">${t.py}</div><div class="hint">👆 选出和拼音对应的词语</div>`,
+    opts:opts.map(o=>o.w),ans:opts.indexOf(t),speakAns:t.w}; }
+function qDuoyin(){ const t=pick(BANK_DUOYIN);
+  return {say:t.say,tag:"选读音",
+    html:`<div class="bigword" style="font-size:34px">${t.w}</div><div class="hint">👆 选出正确的读音</div>`,
+    opts:t.opts,ans:t.a,speakAns:t.opts[t.a]}; }
+function qStrokes(){ const t=pick(BANK_STROKES);
+  const opts=shuffled([t.n,t.n+1,t.n-1]).filter((v,i,a)=>a.indexOf(v)===i);
+  return {say:`“${t.w}”字共有几画？`,tag:"数笔画",
+    html:`<div class="bigword">${t.w}</div><div class="hint">👆 数一数，选笔画数</div>`,
+    opts:opts.map(String),ans:opts.indexOf(t.n),speakAns:`${t.w}字共${t.n}画`}; }
+function qLiangci(){ const t=pick(BANK_LIANGCI);
+  return {say:t.w.replace('（　）','什么量词')+`：${t.w}，括号里填什么？`,tag:"量词",
+    html:`<div class="bigword" style="font-size:32px">${t.w}</div>`,
+    opts:t.opts,ans:t.a,speakAns:t.opts[t.a]}; }
+function qKewen(){ const t=pick(BANK_KEWEN);
+  return {say:t.say,tag:"课文填空",
+    html:`<div style="font-size:24px;text-align:center;line-height:2">${t.q}</div>`,
+    opts:t.opts,ans:t.a,speakAns:t.opts[t.a]}; }
+function qReading(){ const qq=pick(BANK_READING.qs);
+  return {say:qq.q,tag:"阅读理解",
+    html:`<div style="font-size:16.5px;line-height:2;text-indent:2em;border:1px solid #e3d6f7;border-radius:12px;padding:10px 14px;background:#faf7ff">${BANK_READING.passage}</div>
+      <div style="margin-top:10px;text-align:center">${qq.q}</div>`,
+    opts:shuffled(qq.opts),ans:-1,speakAns:null,_raw:qq}; }
+function qAntonym(){ // 连线题（一对对完成）
+  const pairs=shuffled(BANK_ANTONYM).slice(0,4);
+  const left=pairs.map(p=>p[0]), right=shuffled(pairs.map(p=>p[1]));
+  return {type:'match',say:"把意思相反的词连起来。",tag:"反义词连线",
+    pairs:[...pairs],left,right,speakAns:null}; }
+function qShuoxie(){ const t=pick(BANK_SHUOXIE);
+  return {type:'speak',say:t.say,tag:"看图说话",
+    html:`<div style="font-size:56px;text-align:center;letter-spacing:12px;margin:14px 0">${t.scene}</div>
+      <div class="hint">👆 大声说一说，说完点「说好啦」</div>`,speakAns:null}; }
+
+const GENS=[qPinyin,qPinyin,qDuoyin,qStrokes,qLiangci,qKewen,qAntonym,qReading,qReading,qShuoxie];
+
+/* ---------- 流程 ---------- */
+let quiz=[],idx=0,score=0,answered=false;
+const $=id=>document.getElementById(id);
+
+function loadQ(){ answered=false; const q=quiz[idx];
+  if(q._raw){ q.opts=shuffled(q._raw.opts); q.ans=q.opts.indexOf(q._raw.opts[q._raw.a]); }
+  $('qno').textContent='第 '+(idx+1)+' 题 · '+q.tag;
+  $('eq').textContent=''; $('vd').textContent=''; $('vd').className='verdict';
+  $('cur').textContent=idx+1;
+  const bd=$('body');
+  if(q.type==='match'){ renderMatch(q,bd); }
+  else if(q.type==='speak'){ bd.innerHTML=q.html+`<div class="ctr"><button class="btn bigbtn" id="doneBtn">🎤 说好啦</button></div>`;
+    $('doneBtn').onclick=()=>{ if(answered) return; answered=true; score+=10; $('sc').textContent=score;
+      confetti(); speak("说得真好！"); $('vd').textContent='✔ 说得真好！+10 分'; $('vd').className='verdict good';
+      showNext(); }; }
+  else { bd.innerHTML=q.html+`<div class="opts${q.opts.length<=2?' c1':''}">`+
+      q.opts.map((o,i)=>`<div class="opt" data-i="${i}">${o}</div>`).join('')+`</div>`;
+    bd.querySelectorAll('.opt').forEach(el=>el.onclick=()=>doOpt(q,+el.dataset.i,el)); }
+  setTimeout(()=>speak(q.say),700);
+}
+
+function doOpt(q,i,el){ if(answered) return; answered=true;
+  const ok=i===q.ans;
+  document.querySelectorAll('.opt').forEach(x=>x.classList.add('x'));
+  el.classList.add(ok?'ok':'no');
+  if(!ok){ const right=[...document.querySelectorAll('.opt')][q.ans]; right.classList.add('ok'); }
+  if(ok){ score+=10; $('sc').textContent=score; confetti(); speak(pick(PRAISE));
+    $('vd').textContent='✔ 答对啦！+10 分'; $('vd').className='verdict good'; }
+  else { $('card').classList.add('shake'); setTimeout(()=>$('card').classList.remove('shake'),500);
+    speak(pick(CHEER)); $('vd').textContent='✘ 正确答案：'+(q.speakAns||q.opts[q.ans]); $('vd').className='verdict bad'; }
+  showNext(); }
+
+/* 反义词连线 */
+let selL=-1,selR=-1,matched=0;
+function renderMatch(q,bd){ selL=-1; selR=-1; matched=0;
+  bd.innerHTML=`<div class="match"><div class="col" id="colL"></div><div class="col" id="colR"></div></div>
+    <div class="hint">👆 先点左边的字，再点右边它的反义词</div>
+    <div class="ctr"><button class="btn bigbtn next" id="nxBtn" style="display:none">下一题 ▶</button></div>`;
+  q.left.forEach((w,i)=>{ const d=document.createElement('div'); d.className='mi'; d.textContent=w;
+    d.onclick=()=>{ if(d.classList.contains('done'))return; selL=i;
+      [...q.leftEls,...q.rightEls].forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); tryMatch(q); };
+    q.leftEls.push(d); $('colL').appendChild(d); });
+  q.right.forEach((w,i)=>{ const d=document.createElement('div'); d.className='mi'; d.textContent=w;
+    d.onclick=()=>{ if(d.classList.contains('done'))return; selR=i;
+      [...q.leftEls,...q.rightEls].forEach(x=>x.classList.remove('sel')); d.classList.add('sel'); tryMatch(q); };
+    q.rightEls.push(d); $('colR').appendChild(d); });
+}
+function tryMatch(q){ if(selL<0||selR<0) return;
+  const lw=q.left[selL], rw=q.right[selR];
+  const ok=q.pairs.some(p=>(p[0]===lw&&p[1]===rw)||(p[1]===lw&&p[0]===rw));
+  const le=q.leftEls[selL], re=q.rightEls[selR];
+  if(ok){ le.classList.add('done'); re.classList.add('done'); le.classList.remove('sel'); re.classList.remove('sel');
+    matched++; speak(lw+"对"+rw); selL=-1; selR=-1;
+    if(matched===q.pairs.length){ answered=true; score+=10; $('sc').textContent=score; confetti();
+      speak("全部连对啦！"); $('vd').textContent='✔ 全部连对！+10 分'; $('vd').className='verdict good'; showNext(); } }
+  else { le.classList.add('err'); re.classList.add('err'); speak("不对哦，再想想");
+    setTimeout(()=>{ le.classList.remove('err','sel'); re.classList.remove('err','sel'); },450);
+    selL=-1; selR=-1; } }
+
+function showNext(){ const nx=document.getElementById('nxBtn');
+  if(nx){ nx.style.display=''; nx.textContent=(idx===quiz.length-1)?'看成绩 🏁':'下一题 ▶'; nx.onclick=next; return; }
+  const ctr=$('body').querySelector('.ctr');
+  if(ctr){ ctr.innerHTML=`<button class="btn bigbtn next" id="nxBtn2">${(idx===quiz.length-1)?'看成绩 🏁':'下一题 ▶'}</button>`;
+    $('nxBtn2').onclick=next; return; }
+  const div=document.createElement('div'); div.className='ctr';
+  div.innerHTML=`<button class="btn bigbtn next" id="nxBtn2">${(idx===quiz.length-1)?'看成绩 🏁':'下一题 ▶'}</button>`;
+  $('body').appendChild(div); $('nxBtn2').onclick=next; }
+
+function next(){ idx++;
+  if(idx>=quiz.length){ const stars=score>=90?'🌟🌟🌟':score>=60?'🌟🌟':'🌟';
+    $('card').innerHTML=`<div class="done"><div class="medal">🎓</div>
+      <h2>测试完成！得分 ${score} 分</h2><div class="stars" style="font-size:34px;letter-spacing:8px">${stars}</div>
+      <p>共 10 题，答对 ${score/10} 题 · 语文小达人就是你！</p>
+      <button class="btn bigbtn" onclick="restart()">🔄 再测一次</button>
+      <button class="btn bigbtn next" onclick="location.href='口算动画课堂.html'">🏠 返回动画课堂</button></div>`;
+    confetti(40); speak(`测试完成！你得了${score}分，你真是语文小达人！`); return; }
+  loadQ(); }
+function restart(){ score=0; idx=0; $('sc').textContent=0; quiz=makeQuiz(); loadQ(); }
+function makeQuiz(){ if(EXT){ const arr=Array.isArray(EXT)?EXT:(EXT['题目']||EXT['试卷']||[]); if(arr.length) return arr.slice(0,10); }
+  const out=[]; const gens=shuffled(GENS);
+  for(const g of gens){ if(out.length>=10) break; out.push(g()); }
+  return out.filter(Boolean); }
+$('spkBtn').onclick=()=>{ const q=quiz[idx]; if(q) speak(q.say); };
+
+quiz=makeQuiz(); loadQ();
+</script>
+</body>
+</html>

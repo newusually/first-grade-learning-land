@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>口算动画课堂 · Fun Math Animation</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; color: #263238;
+         background: linear-gradient(160deg, #ffecd2 0%, #a1c4fd 45%, #c2e9fb 75%, #fbc2eb 100%);
+         min-height: 100vh; overflow-x: hidden; }
+
+  /* ---------- 动态背景 ---------- */
+  .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .sun { position: absolute; top: 4%; right: 6%; font-size: 64px; animation: spin 24s linear infinite; }
+  .cloud { position: absolute; font-size: 52px; opacity: .75; animation: drift linear infinite; }
+  .bird { position: absolute; font-size: 26px; opacity: .6; animation: fly 30s linear infinite; }
+  .tw { position: absolute; font-size: 20px; animation: twinkle 2.6s ease-in-out infinite; }
+  .grass { position: absolute; bottom: -6px; left: 0; right: 0; font-size: 34px; letter-spacing: 8px;
+           white-space: nowrap; opacity: .8; text-align: center; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes drift { from { transform: translateX(-15vw); } to { transform: translateX(115vw); } }
+  @keyframes fly { from { transform: translate(-10vw, 0); } to { transform: translate(110vw, -40px); } }
+  @keyframes twinkle { 0%,100% { opacity: .15; transform: scale(.8); } 50% { opacity: .95; transform: scale(1.25); } }
+
+  header { text-align: center; padding: 14px 10px 4px; position: relative; z-index: 1; }
+  h1 { font-size: 26px; letter-spacing: 2px; text-shadow: 0 2px 0 #fff, 0 4px 10px rgba(0,0,0,.15); }
+  h1 .star { color: #f6a623; }
+
+  .bar, .pickers { position: relative; z-index: 1; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; padding: 8px; }
+  .bar .grp { display: flex; gap: 6px; background: rgba(255,255,255,.92); border-radius: 999px; padding: 5px 10px;
+              box-shadow: 0 2px 10px rgba(0,0,0,.10); align-items: center; }
+  button { border: none; cursor: pointer; font-size: 15px; padding: 7px 16px; border-radius: 999px;
+           background: #f0f3f6; color: #37474f; font-family: inherit; transition: all .15s; }
+  button:hover { transform: translateY(-1px) scale(1.03); }
+  button.on { background: #ff7043; color: #fff; font-weight: 700; box-shadow: 0 3px 12px rgba(255,112,67,.45); }
+  button.go { background: #29b6f6; color: #fff; font-weight: 700; }
+  button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  .card { width: min(92vw, 880px); margin: 10px auto 8px; background: rgba(255,255,255,.96);
+          border-radius: 24px; border: 3px dashed #ffb3a7; padding: 16px 18px 22px; text-align: center;
+          box-shadow: 0 12px 36px rgba(0,0,0,.14); position: relative; overflow: hidden; z-index: 1; }
+  .eq { font-size: 56px; font-weight: 800; font-family: "Cambria Math", "Arial", sans-serif;
+        letter-spacing: 5px; line-height: 1.2; }
+  .eq .ansbox { display: inline-block; min-width: 86px; height: 70px; border: 4px solid #546e7a;
+                border-radius: 12px; vertical-align: -6px; line-height: 62px; color: #546e7a; }
+  .eq .ansbox.reveal { border-color: #ff7043; color: #ff7043; animation: flash 1s ease 3; }
+  @keyframes flash { 0%,100% { box-shadow: 0 0 0 rgba(255,193,7,0); }
+                     50% { box-shadow: 0 0 36px 12px rgba(255,193,7,.9); transform: scale(1.06); } }
+
+  .stage { min-height: 215px; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+  .toplabel { font-size: 21px; font-weight: 700; color: #37474f; min-height: 28px; }
+  .emoji-row { line-height: 1.22; min-height: 68px; letter-spacing: 3px;
+               display: flex; justify-content: center; flex-wrap: wrap; gap: 2px 6px; }
+  .e { display: inline-block; opacity: 0; transform: scale(0) translateY(-60px); position: relative;
+       animation: drop .5s cubic-bezier(.34,1.56,.64,1) forwards, bob 2.8s ease-in-out .7s infinite; }
+  .e.fromL { transform: scale(0) translateX(-70px); }
+  .e.fromR { transform: scale(0) translateX(70px); }
+  .e.count { animation: bump .4s ease, bob 2.8s ease-in-out .1s infinite; }
+  .e.off { opacity: .26 !important; filter: grayscale(.9); transition: all .5s; }
+  .e.off::after { content: "✕"; position: absolute; inset: 0; display: flex; align-items: center;
+                  justify-content: center; color: #e53935; font-size: .8em; font-weight: 900;
+                  transform: rotate(-12deg); }
+  .e.gold { filter: drop-shadow(0 0 16px #ffc107) brightness(1.3); transform: scale(1.18); }
+  .e.blue { filter: drop-shadow(0 0 16px #42a5f5) brightness(1.22); transform: scale(1.12); }
+  @keyframes drop { 60% { opacity: 1; transform: scale(1.15) translateY(4px); }
+                    to { opacity: 1; transform: none; } }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes bump { 40% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+  .p1 { position: absolute; font-weight: 900; color: #ff7043; font-size: 22px; pointer-events: none;
+        animation: rise 1s ease forwards; text-shadow: 0 1px 0 #fff; z-index: 4; }
+  @keyframes rise { to { transform: translateY(-70px); opacity: 0; } }
+
+  .brace { width: 60%; height: 26px; margin: 0 auto; }
+  .brace path { stroke: #546e7a; stroke-width: 5; fill: none; stroke-linecap: round; }
+  .q { font-size: 25px; font-weight: 800; color: #546e7a; min-height: 32px; }
+  .q.pulse { animation: pulse .9s ease infinite; color: #ff7043; }
+  .q.big { color: #ff7043; animation: popin .5s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pulse { 50% { transform: scale(1.25); } }
+  @keyframes popin { from { transform: scale(0) rotate(-30deg); } to { transform: scale(1); } }
+
+  .steps { font-size: 17px; font-weight: 800; color: #6a1b9a; min-height: 26px; margin-top: 4px; }
+  .say { min-height: 44px; font-size: 19px; font-weight: 700; color: #00695c; padding-top: 6px; }
+
+  .conf { position: absolute; top: -24px; font-size: 20px; pointer-events: none; z-index: 5;
+          animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(115vh) rotate(720deg); opacity: .8; } }
+  .spark { position: absolute; font-size: 26px; pointer-events: none; animation: spark 1.4s ease forwards; z-index: 4; }
+  @keyframes spark { to { transform: translateY(-160px) scale(1.6) rotate(40deg); opacity: 0; } }
+
+  .pickers { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 4px 8px 14px; }
+  .pick { background: rgba(255,255,255,.94); border-radius: 14px; padding: 6px 12px;
+          box-shadow: 0 2px 10px rgba(0,0,0,.10); display: flex; align-items: center; gap: 8px;
+          font-size: 15px; }
+  .pick b { min-width: 34px; text-align: center; font-size: 19px; color: #ff7043; }
+  .pick button { padding: 3px 11px; font-size: 17px; border-radius: 8px; background: #eceff1; }
+  select { font-size: 14px; padding: 5px 8px; border-radius: 8px; border: 1px solid #cfd8dc; }
+  .hint { text-align: center; font-size: 12.5px; color: #546e7a; padding-bottom: 16px; position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+<div class="bg" id="bg"></div>
+
+<header><h1><span class="star">⭐</span> <span id="t-title">口算动画课堂</span> <span class="star">⭐</span></h1>
+  <nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+    <button onclick="location.href='index.html'">🏠 主页</button>
+    <button onclick="location.href='看图学应用.html'">📐 看图学应用</button>
+    <button onclick="location.href='数学测试卷.html'">📝 数学测试卷</button>
+    <button onclick="location.href='语文测试卷.html'">📖 语文测试卷</button>
+  </nav>
+</header>
+
+<div class="bar">
+  <div class="grp" id="langBar"></div>
+  <div class="grp">
+    <button id="m-add" class="on">🍎 <span id="t-add">加法</span></button>
+    <button id="m-sub">✂️ <span id="t-sub">减法</span></button>
+    <button id="m-carry">🎁 <span id="t-carry">凑十法</span></button>
+  </div>
+  <div class="grp">
+    <button id="btn-play" class="go">▶ <span id="t-play">开始</span></button>
+    <button id="btn-replay">🔁 <span id="t-replay">重播</span></button>
+  </div>
+  <div class="grp">
+    <span style="font-size:13px" id="t-speed">速度</span>
+    <select id="speed">
+      <option value="1.4" id="op-slow">慢</option>
+      <option value="1" selected id="op-normal">正常</option>
+      <option value="0.65" id="op-fast">快</option>
+    </select>
+  </div>
+  <div class="grp">
+    <button id="btn-voice" class="on">🔊 <span id="t-voice">语音</span></button>
+    <button id="btn-sfx" class="on">🔔 <span id="t-sfx">音效</span></button>
+  </div>
+</div>
+
+<div class="pickers">
+  <div class="pick"><span id="t-num1">数 1</span>
+    <button id="a-minus">−</button><b id="a-val">3</b><button id="a-plus">＋</button></div>
+  <div class="pick"><span id="t-num2">数 2</span>
+    <button id="b-minus">−</button><b id="b-val">2</b><button id="b-plus">＋</button></div>
+  <div class="pick"><span id="t-emoji">图形</span><span class="emo" id="emo"></span></div>
+</div>
+
+<div class="card">
+  <div class="eq"><span id="e-a">3</span> <span id="e-op">＋</span> <span id="e-b">2</span> ＝
+    <span class="ansbox" id="e-ans">?</span></div>
+  <div class="stage">
+    <div class="toplabel" id="toplabel"></div>
+    <div class="emoji-row" id="row"></div>
+    <svg class="brace" id="brace" viewBox="0 0 400 26"><path id="bracePath" d="M10 4 Q 200 40 390 4"/></svg>
+    <div class="q" id="qlabel"></div>
+  </div>
+  <div class="steps" id="steps"></div>
+  <div class="say" id="say"></div>
+</div>
+<div class="hint" id="t-hint"></div>
+
+<script>
+/* ============ 语言包：AJAX 优先，失败回退内置 ============ */
+const BUILTIN = {
+  zh: { name:"中文", voice:"zh-CN", title:"口算动画课堂", add:"加法(≤10)", sub:"减法(≤20)", carry:"凑十法(≤20)",
+    play:"开始", pause:"暂停", replay:"重播", speed:"速度", slow:"慢", normal:"正常", fast:"快", voice:"语音", sfx:"音效",
+    num1:"数 1", num2:"数 2", emoji:"图形",
+    hint:"数 1、数 2 最大都能到 10（减法可到 20），总和不超过 20。选卡片类型，点“开始”！",
+    plus:"＋", minus:"−", q:"？个",
+    s1:(a,b,m)=>m==="add"?`我们来算 ${a} 加 ${b}。`:m==="sub"?`我们来算 ${a} 减 ${b}。`:
+        (a===10?`10 加 ${b}，一共是多少呢？`:`${a} 加 ${b} 超过十了，用凑十法！`),
+    s2:n=>`先有 ${n} 个。`, s3:n=>`又来了 ${n} 个。`, s4:n=>`拿走了 ${n} 个。`,
+    s5:()=>"一共有多少个呢？", s6:()=>"我们一起来数一数。",
+    s7:(x,y,z)=>`${x} 加 ${y} 等于 ${z}！答对啦！`,
+    s8:(x,y,z)=>`${x} 减 ${y} 等于 ${z}！你学会了吗？`,
+    s9:(x,y,k,r)=>`把 ${y} 分成 ${k} 和 ${r}。先算 ${x} 加 ${k} 等于 10，再算 10 加 ${r} 等于 ${x+k+r}！`,
+    s10:y=>`10 加 ${y}，直接就是 ${10+y}！`,
+    count:n=>`${n} 个`, total:n=>`一共 ${n} 个`, left:n=>`还剩 ${n} 个`,
+    stepMake:()=>"先凑十：", stepRest:()=>"还剩下：", stepFin:()=>"再看：", all:n=>`全部 ${n} 个` },
+  en: { name:"English", voice:"en-US", title:"Fun Math Animation", add:"Add (≤10)", sub:"Take away (≤20)", carry:"Make a Ten (≤20)",
+    play:"Play", pause:"Pause", replay:"Replay", speed:"Speed", slow:"Slow", normal:"Normal", fast:"Fast", voice:"Voice", sfx:"Sound",
+    num1:"Number 1", num2:"Number 2", emoji:"Picture",
+    hint:"Both numbers go up to 10 (up to 20 for take-away). Pick a card, press Play!",
+    plus:"＋", minus:"−", q:"？how many",
+    s1:(a,b,m)=>m==="add"?`Let's calculate ${a} plus ${b}.`:m==="sub"?`Let's calculate ${a} minus ${b}.`:
+        (a===10?`Ten plus ${b} — how many in all?`:`${a} plus ${b} is more than ten. Let's make a ten!`),
+    s2:n=>`First we have ${n}.`, s3:n=>`Then ${n} more come.`, s4:n=>`${n} go away.`,
+    s5:()=>"How many are there now?", s6:()=>"Let's count together!",
+    s7:(x,y,z)=>`${x} plus ${y} equals ${z}! Great job!`,
+    s8:(x,y,z)=>`${x} minus ${y} equals ${z}! Well done!`,
+    s9:(x,y,k,r)=>`Split ${y} into ${k} and ${r}. ${x} plus ${k} makes ten, then ten plus ${r} makes ${x+k+r}!`,
+    s10:y=>`Ten plus ${y} is just ${10+y}!`,
+    count:n=>`${n}`, total:n=>`${n} in total`, left:n=>`${n} left`,
+    stepMake:()=>"Make ten: ", stepRest:()=>"Left over: ", stepFin:()=>"So: ", all:n=>`All ${n}` },
+  ja: { name:"日本語", voice:"ja-JP", title:"計算アニメ教室", add:"たしざん(≤10)", sub:"ひきざん(≤20)", carry:"10を作る(≤20)",
+    play:"スタート", pause:"一時停止", replay:"もう一度", speed:"速さ", slow:"ゆっくり", normal:"ふつう", fast:"はやい", voice:"おとは", sfx:"おと",
+    num1:"かず1", num2:"かず2", emoji:"え",
+    hint:"かずは どちらも 10 まで（ひきざんは 20 まで）。「スタート」をおしてね！",
+    plus:"＋", minus:"−", q:"？こ",
+    s1:(a,b,m)=>m==="add"?`${a} たす ${b} を 計算しましょう。`:m==="sub"?`${a} ひく ${b} を 計算しましょう。`:
+        (a===10?`10 たす ${b} は いくつ かな？`:`${a} たす ${b} は 10 より おおきい！10を作りましょう。`),
+    s2:n=>`まず ${n} こ あります。`, s3:n=>`さらに ${n} こ きました。`, s4:n=>`${n} こ なくりました。`,
+    s5:()=>"ぜんぶで いくつ かな？", s6:()=>"いっしょに かぞえましょう！",
+    s7:(x,y,z)=>`${x} たす ${y} は ${z}！すごいね！`,
+    s8:(x,y,z)=>`${x} ひく ${y} は ${z}！できたね！`,
+    s9:(x,y,k,r)=>`${y} を ${k} と ${r} に わけます。${x} たす ${k} で 10、10 たす ${r} で ${x+k+r}！`,
+    s10:y=>`10 たす ${y} は そのまま ${10+y}！`,
+    count:n=>`${n} こ`, total:n=>`ぜんぶで ${n} こ`, left:n=>`のこり ${n} こ`,
+    stepMake:()=>"10を作る：", stepRest:()=>"のこり：", stepFin:()=>"だから：", all:n=>`ぜんぶ ${n}` },
+  es: { name:"Español", voice:"es-ES", title:"Animación de Matemáticas", add:"Sumar (≤10)", sub:"Quitar (≤20)", carry:"Hacer un Diez (≤20)",
+    play:"Play", pause:"Pausa", replay:"Repetir", speed:"Velocidad", slow:"Lento", normal:"Normal", fast:"Rápido", voice:"Voz", sfx:"Sonido",
+    num1:"Número 1", num2:"Número 2", emoji:"Dibujo",
+    hint:"Ambos números hasta 10 (hasta 20 para quitar). ¡Elige una tarjeta y pulsa Play!",
+    plus:"＋", minus:"−", q:"？cuántos",
+    s1:(a,b,m)=>m==="add"?`Vamos a calcular ${a} más ${b}.`:m==="sub"?`Vamos a calcular ${a} menos ${b}.`:
+        (a===10?`Diez más ${b} — ¿cuántos hay?`:`${a} más ${b} pasa de diez. ¡Hagamos un diez!`),
+    s2:n=>`Primero tenemos ${n}.`, s3:n=>`Llegan ${n} más.`, s4:n=>`Se van ${n}.`,
+    s5:()=>"¿Cuántos hay ahora?", s6:()=>"¡Contemos juntos!",
+    s7:(x,y,z)=>`${x} más ${y} es igual a ${z}! ¡Muy bien!`,
+    s8:(x,y,z)=>`${x} menos ${y} es igual a ${z}! ¡Lo lograste!`,
+    s9:(x,y,k,r)=>`Divide ${y} en ${k} y ${r}. ${x} más ${k} es diez, y diez más ${r} es ${x+k+r}!`,
+    s10:y=>`¡Diez más ${y} es ${10+y}!`,
+    count:n=>`${n}`, total:n=>`${n} en total`, left:n=>`quedan ${n}`,
+    stepMake:()=>"Hacer diez: ", stepRest:()=>"Sobran: ", stepFin:()=>"Entonces: ", all:n=>`Todos ${n}` }
+};
+let PACKS = null;
+async function ajaxLoadPacks() {
+  const out = {};
+  for (const code of Object.keys(BUILTIN)) {
+    try { const r = await fetch(`./lang/${code}.json`, { cache: "no-store" }); if (r.ok) out[code] = await r.json(); }
+    catch (e) { /* file:// 回退内置 */ }
+  }
+  PACKS = Object.keys(out).length ? Object.assign({}, BUILTIN, out) : BUILTIN;
+}
+
+/* ============ 状态 ============ */
+const EMOJIS = ["🍎","🍓","🐟","🌸","🎈","⭐","🍊","🐝"];
+const S = { lang:"zh", mode:"add", a:3, b:2, emo:0, playing:false, paused:false, voice:true, sfx:true, speed:1 };
+const $ = id => document.getElementById(id);
+const P = () => PACKS[S.lang];
+
+/* ============ 音效（WebAudio，无外部文件） ============ */
+let AC = null;
+function ac() { if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return AC; }
+function tone(freq, dur, type, vol) {
+  if (!S.sfx) return; const c = ac(); if (!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type || "triangle"; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol || .12, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur);
+  o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + dur);
+}
+const popSfx = () => tone(560 + Math.random() * 320, .12, "triangle", .10);
+const offSfx = () => tone(300, .16, "sawtooth", .07);
+const chime = () => { tone(523, .18, "sine", .14); setTimeout(() => tone(659, .18, "sine", .14), 140); setTimeout(() => tone(784, .3, "sine", .15), 280); };
+
+function speak(text) {
+  if (!S.voice || !("speechSynthesis" in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = P().voice; u.rate = Math.min(1.6, .9 / S.speed * 1.15); u.pitch = 1.12;
+    const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.toLowerCase().startsWith(P().voice.slice(0, 2)));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+/* ============ 动态背景 ============ */
+function buildBg() {
+  const bg = $("bg"); if (bg.childElementCount) return;
+  const sun = document.createElement("div"); sun.className = "sun"; sun.textContent = "🌞"; bg.appendChild(sun);
+  for (let i = 0; i < 5; i++) {
+    const c = document.createElement("div"); c.className = "cloud"; c.textContent = "☁️";
+    c.style.top = (4 + i * 9) + "%"; c.style.animationDuration = (26 + i * 9) + "s";
+    c.style.animationDelay = (-i * 7) + "s"; bg.appendChild(c);
+  }
+  for (let i = 0; i < 3; i++) {
+    const b = document.createElement("div"); b.className = "bird"; b.textContent = "🦋";
+    b.style.top = (16 + i * 12) + "%"; b.style.animationDuration = (24 + i * 8) + "s";
+    b.style.animationDelay = (-i * 9) + "s"; bg.appendChild(b);
+  }
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement("div"); s.className = "tw"; s.textContent = "✨";
+    s.style.left = (Math.random() * 96) + "%"; s.style.top = (Math.random() * 80) + "%";
+    s.style.animationDelay = (Math.random() * 2.6) + "s"; bg.appendChild(s);
+  }
+  const g = document.createElement("div"); g.className = "grass";
+  g.textContent = "🌿🌱🌷🌿🌱🌼🌿🌱🌷🌿🌱🌼🌿🌱🌷🌿🌱🌼🌿"; bg.appendChild(g);
+}
+
+/* ============ UI ============ */
+function renderLangBar() {
+  const bar = $("langBar"); bar.innerHTML = "";
+  Object.keys(PACKS).forEach(code => {
+    const b = document.createElement("button");
+    b.textContent = PACKS[code].name;
+    if (code === S.lang) b.className = "on";
+    b.onclick = () => { S.lang = code; applyLang(); stopAll(); resetStage(); };
+    bar.appendChild(b);
+  });
+}
+function applyLang() {
+  const t = P();
+  $("t-title").textContent = t.title;
+  $("t-add").textContent = t.add; $("t-sub").textContent = t.sub; $("t-carry").textContent = t.carry;
+  $("t-play").textContent = t.play; $("t-replay").textContent = t.replay;
+  $("t-speed").textContent = t.speed;
+  $("op-slow").textContent = t.slow; $("op-normal").textContent = t.normal; $("op-fast").textContent = t.fast;
+  $("t-voice").textContent = t.voice; $("t-sfx").textContent = t.sfx;
+  $("t-num1").textContent = t.num1; $("t-num2").textContent = t.num2;
+  $("t-emoji").textContent = t.emoji; $("t-hint").textContent = t.hint;
+  document.querySelectorAll("#m-add,#m-sub,#m-carry").forEach(b => b.classList.remove("on"));
+  $({ add: "m-add", sub: "m-sub", carry: "m-carry" }[S.mode]).classList.add("on");
+  $("e-op").textContent = S.mode === "sub" ? t.minus : t.plus;
+  renderLangBar();
+}
+
+/* ============ 舞台 ============ */
+function sizeRow() {
+  const total = S.mode === "sub" ? S.a : S.a + S.b;
+  $("row").style.fontSize = total <= 10 ? "50px" : total <= 14 ? "42px" : "33px";
+}
+function emojiNode(from) {
+  const d = document.createElement("span");
+  d.className = "e" + (from === "L" ? " fromL" : from === "R" ? " fromR" : "");
+  d.textContent = EMOJIS[S.emo]; return d;
+}
+function setSay(x) { $("say").textContent = x; }
+function setStep(x) { $("steps").textContent = x || ""; }
+function floatPlus(node, txt) {
+  const r = node.getBoundingClientRect(), card = document.querySelector(".card").getBoundingClientRect();
+  const s = document.createElement("span"); s.className = "p1"; s.textContent = txt || "+1";
+  s.style.left = (r.left - card.left + r.width / 2 - 12) + "px";
+  s.style.top = (r.top - card.top - 8) + "px";
+  document.querySelector(".card").appendChild(s);
+  setTimeout(() => s.remove(), 1000);
+}
+function confetti() {
+  const box = document.querySelector(".card");
+  const chars = ["🎉","🎊","✨","⭐","🌟","💫","🏅"];
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement("span");
+    s.className = "conf"; s.textContent = chars[i % 7];
+    s.style.left = (Math.random() * 96) + "%";
+    s.style.animationDuration = (1.6 + Math.random() * 1.6) + "s";
+    s.style.animationDelay = (Math.random() * .6) + "s";
+    box.appendChild(s); setTimeout(() => s.remove(), 3800);
+  }
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement("span");
+    s.className = "spark"; s.textContent = "✨";
+    s.style.left = (10 + Math.random() * 80) + "%"; s.style.top = (45 + Math.random() * 35) + "%";
+    s.style.animationDelay = (Math.random() * .5) + "s";
+    box.appendChild(s); setTimeout(() => s.remove(), 2300);
+  }
+}
+
+/* ============ 步骤引擎 ============ */
+let timer = null, queue = [];
+function stopAll() {
+  clearTimeout(timer); queue = []; S.playing = false; S.paused = false;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  $("btn-play").disabled = false; $("t-play").textContent = P() ? P().play : "开始";
+  setSay(""); setStep("");
+}
+function run() {
+  if (S.paused || !queue.length) {
+    if (!queue.length) { S.playing = false; $("btn-play").disabled = false; $("t-play").textContent = P().play; }
+    return;
+  }
+  const st = queue.shift(); st.fn();
+  timer = setTimeout(run, st.delay * S.speed);
+}
+const push = (delay, fn) => queue.push({ delay, fn });
+function popInSteps(k, gap, from) {
+  for (let i = 0; i < k; i++) push(gap, () => { const e = emojiNode(from); e.classList.add("in"); $("row").appendChild(e); popSfx(); });
+}
+
+function prepare() {
+  const t = P(), a = S.a, b = S.b;
+  $("row").innerHTML = ""; $("toplabel").textContent = ""; $("qlabel").textContent = ""; setStep("");
+  sizeRow();
+  const path = $("bracePath");
+  path.style.transition = "none"; path.style.strokeDasharray = 460; path.style.strokeDashoffset = 460;
+  void path.getBoundingClientRect();
+  const ans = $("e-ans"); ans.textContent = "?"; ans.classList.remove("reveal");
+  $("e-a").textContent = a; $("e-b").textContent = b;
+  $("e-op").textContent = S.mode === "sub" ? t.minus : t.plus;
+  setSay(t.s1(a, b, S.mode)); speak(t.s1(a, b, S.mode));
+}
+
+function buildSteps() {
+  const t = P(), a = S.a, b = S.b;
+  const isAdd = S.mode === "add", isSub = S.mode === "sub", isCarry = S.mode === "carry";
+  queue = [];
+  push(400, prepare);
+
+  if (isSub) {
+    popInSteps(a, Math.max(220, 420 - a * 18), "L");
+    push(520, () => { $("toplabel").textContent = t.total(a); speak(t.s2(a)); });
+    push(950, () => { $("toplabel").textContent = t.total(a) + " " + t.minus + " " + t.count(b); });
+    push(400, () => {
+      const items = Array.from($("row").children), gone = items.slice(a - b);
+      const gap = Math.max(180, 380 * S.speed - a * 8);
+      gone.forEach((node, i) => setTimeout(() => { node.classList.add("off"); offSfx(); }, i * gap));
+    });
+    push(Math.max(500, b * Math.max(180, 380 * S.speed - a * 8) + 250), () => { setSay(t.s4(b)); speak(t.s4(b)); });
+  } else {
+    popInSteps(a, Math.max(220, 420 - a * 18), "L");
+    push(520, () => { $("toplabel").textContent = t.count(a); speak(t.s2(a)); });
+    push(950, () => { $("toplabel").textContent = t.count(a) + " " + t.plus + " "; });
+    popInSteps(b, Math.max(220, 420 - b * 18), "R");
+    push(520, () => { $("toplabel").textContent = t.count(a) + " " + t.plus + " " + t.count(b); speak(t.s3(b)); });
+  }
+
+  push(800, () => {
+    const path = $("bracePath");
+    path.style.transition = "stroke-dashoffset 1s ease"; path.style.strokeDashoffset = 0;
+    $("qlabel").textContent = t.q; $("qlabel").className = "q pulse";
+    setSay(t.s5()); speak(t.s5());
+  });
+  push(2100, () => { setSay(t.s6()); speak(t.s6()); });
+
+  if (isCarry && a < 10 && a + b > 10) {
+    const k = 10 - a, r = b - k;
+    push(600, () => {
+      const items = Array.from($("row").children);
+      items.slice(a, a + k).forEach(n => n.classList.add("gold"));
+      setStep(`🔸 ${t.stepMake()}${a}＋${k}＝10`);
+      setSay(t.s9(a, b, k, r)); speak(t.s9(a, b, k, r)); chime();
+    });
+    push(3400, () => {
+      const items = Array.from($("row").children);
+      items.slice(a + k).forEach(n => n.classList.add("blue"));
+      setStep(`🔹 ${t.stepRest()}${r}　${t.stepFin()}10＋${r}＝${10 + r}`);
+      $("toplabel").textContent = t.total(10) + " " + t.plus + " " + t.count(r);
+    });
+    push(2800);
+  } else if (isCarry && a === 10) {
+    push(600, () => { setStep(`🔸 10＋${b}＝${10 + b}`); setSay(t.s10(b)); speak(t.s10(b)); chime(); });
+    push(2200);
+  }
+
+  push(500, () => {
+    const all = Array.from($("row").children).filter(e => !(isSub && e.classList.contains("off")));
+    let n = 0;
+    const gap = Math.max(220, 500 * S.speed);
+    const cnt = setInterval(() => {
+      if (n > 0 && all[n - 1]) all[n - 1].classList.remove("count");
+      if (n >= all.length) { clearInterval(cnt); return; }
+      const node = all[n];
+      node.classList.add("count"); floatPlus(node, isSub ? "−1" : "+1");
+      const cur = n + 1;
+      $("toplabel").textContent = isSub ? t.left(cur) : t.all(cur);
+      tone(440 + cur * 40, .09, "triangle", .08);
+      n++;
+    }, gap);
+  });
+  push(Math.max(700, (isSub ? a - b : a + b) * Math.max(220, 500 * S.speed) + 700), () => {
+    const res = isSub ? a - b : a + b;
+    const ans = $("e-ans"); ans.textContent = res; ans.classList.add("reveal");
+    $("qlabel").textContent = isSub ? t.left(res) : t.total(res);
+    $("qlabel").className = "q big";
+    setSay(isSub ? t.s8(a, b, res) : t.s7(a, b, res));
+    speak(isSub ? t.s8(a, b, res) : t.s7(a, b, res));
+    chime(); confetti();
+  });
+  push(1800, () => {});
+}
+
+/* ============ 控件 ============ */
+$("btn-play").onclick = () => {
+  if (!PACKS) return;
+  ac(); // 用户手势里激活音频
+  if (S.playing) {
+    S.paused = !S.paused;
+    $("t-play").textContent = S.paused ? P().play : P().pause;
+    if (!S.paused) run();
+    return;
+  }
+  S.playing = true; S.paused = false; $("t-play").textContent = P().pause;
+  buildSteps(); run();
+};
+$("btn-replay").onclick = () => { stopAll(); setTimeout(() => $("btn-play").click(), 100); };
+function setMode(m) {
+  S.mode = m; stopAll(); applyLang();
+  const maxA = m === "sub" ? 20 : 10;
+  if (S.a > maxA) S.a = maxA;
+  if (m !== "sub" && S.a + S.b > 20) S.b = 20 - S.a;
+  if (m === "sub" && S.b >= S.a) S.b = Math.max(1, S.a - 1);
+  if (m === "carry" && S.a < 10 && S.a + S.b <= 10) S.b = Math.min(10, 11 - S.a);
+  $("a-val").textContent = S.a; $("b-val").textContent = S.b;
+  resetStage();
+}
+$("m-add").onclick = () => setMode("add");
+$("m-sub").onclick = () => setMode("sub");
+$("m-carry").onclick = () => setMode("carry");
+$("btn-voice").onclick = () => { S.voice = !S.voice; $("btn-voice").classList.toggle("on", S.voice); if (!S.voice) try { speechSynthesis.cancel(); } catch (e) {} };
+$("btn-sfx").onclick = () => { S.sfx = !S.sfx; $("btn-sfx").classList.toggle("on", S.sfx); };
+$("speed").onchange = e => S.speed = parseFloat(e.target.value);
+
+function bindNum(key, isB) {
+  $(key + "-plus").onclick = () => {
+    const maxA = S.mode === "sub" ? 20 : 10;
+    if (key === "a") S.a = Math.min(maxA, S.a + 1);
+    else S.b = Math.min(10, S.b + 1);
+    if (isB && S.mode === "sub" && S.b >= S.a) S.b = Math.max(1, S.a - 1);
+    if (!isB && S.mode === "sub" && S.a <= S.b) S.a = S.b + 1;
+    if (S.mode !== "sub" && S.a + S.b > 20) { if (isB) S.b = 20 - S.a; else S.a = 20 - S.b; }
+    if (S.mode === "carry" && S.a < 10 && S.a + S.b <= 10 && isB) S.b = Math.min(10, 11 - S.a);
+    $("a-val").textContent = S.a; $("b-val").textContent = S.b; resetStage();
+  };
+  $(key + "-minus").onclick = () => {
+    const lo = (isB && S.mode === "carry" && S.a < 10) ? 11 - S.a : 1;
+    S[key] = Math.max(lo, S[key] - 1);
+    if (!isB && S.mode === "sub" && S.a <= S.b) S.a = Math.min(20, S.b + 1);
+    if (isB && S.mode === "sub" && S.b >= S.a) S.b = Math.max(1, S.a - 1);
+    $("a-val").textContent = S.a; $("b-val").textContent = S.b; resetStage();
+  };
+}
+bindNum("a", false); bindNum("b", true);
+
+function resetStage() {
+  $("row").innerHTML = ""; $("toplabel").textContent = ""; $("qlabel").textContent = ""; setStep("");
+  sizeRow();
+  const path = $("bracePath"); path.style.transition = "none"; path.style.strokeDashoffset = 460;
+  $("e-a").textContent = S.a; $("e-b").textContent = S.b;
+  $("e-op").textContent = S.mode === "sub" ? P().minus : P().plus;
+  const ans = $("e-ans"); ans.textContent = "?"; ans.classList.remove("reveal");
+}
+function renderEmoji() {
+  const box = $("emo"); box.innerHTML = "";
+  EMOJIS.forEach((e, i) => {
+    const s = document.createElement("span");
+    s.className = "emo"; s.textContent = e;
+    s.style.cssText = `opacity:${i === S.emo ? 1 : .45};outline:${i === S.emo ? "2px solid #ff7043" : "none"};border-radius:8px;padding:0 2px;cursor:pointer;`;
+    s.onclick = () => { S.emo = i; renderEmoji(); resetStage(); };
+    box.appendChild(s);
+  });
+}
+
+/* ============ 启动 ============ */
+(async () => {
+  await ajaxLoadPacks();
+  applyLang();
+  renderEmoji();
+  buildBg();
+  if ("speechSynthesis" in window) speechSynthesis.getVoices();
+})();
+</script>
+</body>
+</html>
