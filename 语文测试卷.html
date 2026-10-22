@@ -94,7 +94,7 @@
   <span class="score">⭐ <span id="sc">0</span> 分</span>
   <span class="prog">第 <span id="cur">1</span> / 10 题</span>
   <button class="btn spk" id="spkBtn">🔊 朗读题目</button>
-  <button class="btn home" onclick="location.href='index.html'">🏠 主页</button>
+  <button class="btn home" onclick="location.href='主页.html'">🏠 主页</button>
   <button class="btn home" onclick="location.href='口算动画课堂.html'">🎬 动画课堂</button>
 </header>
 
@@ -243,6 +243,7 @@ function doOpt(q,i,el){ if(answered) return; answered=true;
 /* 反义词连线 */
 let selL=-1,selR=-1,matched=0;
 function renderMatch(q,bd){ selL=-1; selR=-1; matched=0;
+  q.leftEls=[]; q.rightEls=[];
   bd.innerHTML=`<div class="match"><div class="col" id="colL"></div><div class="col" id="colR"></div></div>
     <div class="hint">👆 先点左边的字，再点右边它的反义词</div>
     <div class="ctr"><button class="btn bigbtn next" id="nxBtn" style="display:none">下一题 ▶</button></div>`;

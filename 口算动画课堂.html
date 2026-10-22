@@ -105,7 +105,7 @@
 
 <header><h1><span class="star">⭐</span> <span id="t-title">口算动画课堂</span> <span class="star">⭐</span></h1>
   <nav style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px">
-    <button onclick="location.href='index.html'">🏠 主页</button>
+    <button onclick="location.href='主页.html'">🏠 主页</button>
     <button onclick="location.href='看图学应用.html'">📐 看图学应用</button>
     <button onclick="location.href='数学测试卷.html'">📝 数学测试卷</button>
     <button onclick="location.href='语文测试卷.html'">📖 语文测试卷</button>
@@ -113,7 +113,6 @@
 </header>
 
 <div class="bar">
-  <div class="grp" id="langBar"></div>
   <div class="grp">
     <button id="m-add" class="on">🍎 <span id="t-add">加法</span></button>
     <button id="m-sub">✂️ <span id="t-sub">减法</span></button>
@@ -177,51 +176,6 @@ const BUILTIN = {
     s10:y=>`10 加 ${y}，直接就是 ${10+y}！`,
     count:n=>`${n} 个`, total:n=>`一共 ${n} 个`, left:n=>`还剩 ${n} 个`,
     stepMake:()=>"先凑十：", stepRest:()=>"还剩下：", stepFin:()=>"再看：", all:n=>`全部 ${n} 个` },
-  en: { name:"English", voice:"en-US", title:"Fun Math Animation", add:"Add (≤10)", sub:"Take away (≤20)", carry:"Make a Ten (≤20)",
-    play:"Play", pause:"Pause", replay:"Replay", speed:"Speed", slow:"Slow", normal:"Normal", fast:"Fast", voice:"Voice", sfx:"Sound",
-    num1:"Number 1", num2:"Number 2", emoji:"Picture",
-    hint:"Both numbers go up to 10 (up to 20 for take-away). Pick a card, press Play!",
-    plus:"＋", minus:"−", q:"？how many",
-    s1:(a,b,m)=>m==="add"?`Let's calculate ${a} plus ${b}.`:m==="sub"?`Let's calculate ${a} minus ${b}.`:
-        (a===10?`Ten plus ${b} — how many in all?`:`${a} plus ${b} is more than ten. Let's make a ten!`),
-    s2:n=>`First we have ${n}.`, s3:n=>`Then ${n} more come.`, s4:n=>`${n} go away.`,
-    s5:()=>"How many are there now?", s6:()=>"Let's count together!",
-    s7:(x,y,z)=>`${x} plus ${y} equals ${z}! Great job!`,
-    s8:(x,y,z)=>`${x} minus ${y} equals ${z}! Well done!`,
-    s9:(x,y,k,r)=>`Split ${y} into ${k} and ${r}. ${x} plus ${k} makes ten, then ten plus ${r} makes ${x+k+r}!`,
-    s10:y=>`Ten plus ${y} is just ${10+y}!`,
-    count:n=>`${n}`, total:n=>`${n} in total`, left:n=>`${n} left`,
-    stepMake:()=>"Make ten: ", stepRest:()=>"Left over: ", stepFin:()=>"So: ", all:n=>`All ${n}` },
-  ja: { name:"日本語", voice:"ja-JP", title:"計算アニメ教室", add:"たしざん(≤10)", sub:"ひきざん(≤20)", carry:"10を作る(≤20)",
-    play:"スタート", pause:"一時停止", replay:"もう一度", speed:"速さ", slow:"ゆっくり", normal:"ふつう", fast:"はやい", voice:"おとは", sfx:"おと",
-    num1:"かず1", num2:"かず2", emoji:"え",
-    hint:"かずは どちらも 10 まで（ひきざんは 20 まで）。「スタート」をおしてね！",
-    plus:"＋", minus:"−", q:"？こ",
-    s1:(a,b,m)=>m==="add"?`${a} たす ${b} を 計算しましょう。`:m==="sub"?`${a} ひく ${b} を 計算しましょう。`:
-        (a===10?`10 たす ${b} は いくつ かな？`:`${a} たす ${b} は 10 より おおきい！10を作りましょう。`),
-    s2:n=>`まず ${n} こ あります。`, s3:n=>`さらに ${n} こ きました。`, s4:n=>`${n} こ なくりました。`,
-    s5:()=>"ぜんぶで いくつ かな？", s6:()=>"いっしょに かぞえましょう！",
-    s7:(x,y,z)=>`${x} たす ${y} は ${z}！すごいね！`,
-    s8:(x,y,z)=>`${x} ひく ${y} は ${z}！できたね！`,
-    s9:(x,y,k,r)=>`${y} を ${k} と ${r} に わけます。${x} たす ${k} で 10、10 たす ${r} で ${x+k+r}！`,
-    s10:y=>`10 たす ${y} は そのまま ${10+y}！`,
-    count:n=>`${n} こ`, total:n=>`ぜんぶで ${n} こ`, left:n=>`のこり ${n} こ`,
-    stepMake:()=>"10を作る：", stepRest:()=>"のこり：", stepFin:()=>"だから：", all:n=>`ぜんぶ ${n}` },
-  es: { name:"Español", voice:"es-ES", title:"Animación de Matemáticas", add:"Sumar (≤10)", sub:"Quitar (≤20)", carry:"Hacer un Diez (≤20)",
-    play:"Play", pause:"Pausa", replay:"Repetir", speed:"Velocidad", slow:"Lento", normal:"Normal", fast:"Rápido", voice:"Voz", sfx:"Sonido",
-    num1:"Número 1", num2:"Número 2", emoji:"Dibujo",
-    hint:"Ambos números hasta 10 (hasta 20 para quitar). ¡Elige una tarjeta y pulsa Play!",
-    plus:"＋", minus:"−", q:"？cuántos",
-    s1:(a,b,m)=>m==="add"?`Vamos a calcular ${a} más ${b}.`:m==="sub"?`Vamos a calcular ${a} menos ${b}.`:
-        (a===10?`Diez más ${b} — ¿cuántos hay?`:`${a} más ${b} pasa de diez. ¡Hagamos un diez!`),
-    s2:n=>`Primero tenemos ${n}.`, s3:n=>`Llegan ${n} más.`, s4:n=>`Se van ${n}.`,
-    s5:()=>"¿Cuántos hay ahora?", s6:()=>"¡Contemos juntos!",
-    s7:(x,y,z)=>`${x} más ${y} es igual a ${z}! ¡Muy bien!`,
-    s8:(x,y,z)=>`${x} menos ${y} es igual a ${z}! ¡Lo lograste!`,
-    s9:(x,y,k,r)=>`Divide ${y} en ${k} y ${r}. ${x} más ${k} es diez, y diez más ${r} es ${x+k+r}!`,
-    s10:y=>`¡Diez más ${y} es ${10+y}!`,
-    count:n=>`${n}`, total:n=>`${n} en total`, left:n=>`quedan ${n}`,
-    stepMake:()=>"Hacer diez: ", stepRest:()=>"Sobran: ", stepFin:()=>"Entonces: ", all:n=>`Todos ${n}` }
 };
 let PACKS = null;
 async function ajaxLoadPacks() {
@@ -290,16 +244,6 @@ function buildBg() {
 }
 
 /* ============ UI ============ */
-function renderLangBar() {
-  const bar = $("langBar"); bar.innerHTML = "";
-  Object.keys(PACKS).forEach(code => {
-    const b = document.createElement("button");
-    b.textContent = PACKS[code].name;
-    if (code === S.lang) b.className = "on";
-    b.onclick = () => { S.lang = code; applyLang(); stopAll(); resetStage(); };
-    bar.appendChild(b);
-  });
-}
 function applyLang() {
   const t = P();
   $("t-title").textContent = t.title;
@@ -313,7 +257,6 @@ function applyLang() {
   document.querySelectorAll("#m-add,#m-sub,#m-carry").forEach(b => b.classList.remove("on"));
   $({ add: "m-add", sub: "m-sub", carry: "m-carry" }[S.mode]).classList.add("on");
   $("e-op").textContent = S.mode === "sub" ? t.minus : t.plus;
-  renderLangBar();
 }
 
 /* ============ 舞台 ============ */
