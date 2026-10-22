@@ -8,12 +8,13 @@
 
 ## ✨ 核心特性
 
-- **三层架构（JS / CSS 分层）**：基础层 → 业务层（功能模块）→ 应用层（页面脚本），职责清晰、易维护。
+- **前台 / 后台分层 + Vue 3 渲染**：HTML 只留 `<div id="app" data-view="xxx">`，全部界面由 Vue 3（本地 vendor 构建）渲染；JS 分「后台数据/服务层」与「前台视图层」，CSS 分 base / components / pages 三层。
 - **多 JSON 题库融合**：通过 `题库/manifest.json` 把任意多份真题卷（数学 / 语文 / 应用题）按 `type` 自动合并进对应题库池，与内置随机题库一起使用。
 - **变种引擎**：应用题与生成器每次抽题都重新随机，旧题秒变新题；应用题还能同品类互换动植物图片，题目无限变种。
 - **知识点（kp）+ 针对性讲解**：每题携带知识点标签与“答错小讲解”，并自动统计**薄弱知识点**，供「薄弱点巩固」页做针对性练习。
-- **语音 + 动画**：答题有语音朗读与 WebAudio 音效；口算用可爱 SVG 动画演示加减乘除与凑十法。
-- **离线 SVG 图库**：30+ 动物 / 植物 / 水果 / 日常物品图标，全部内联 SVG，不依赖任何图片文件。
+- **语音 + 动画**：答题自动语音读题（可一键开关），拼音按中文呼读音朗读、英文按 en-US 朗读，绝不混淆；口算用可爱 SVG 动画演示加减乘除、凑十法与混合运算。
+- **整篇朗读**：教案、课文、故事、字母表、单词表都能「按顺序读完」，也可单条点读。
+- **离线 SVG 图库**：40+ 动物 / 植物 / 水果 / 日常物品 / 人物图标，全部内联 SVG，不依赖任何图片文件。
 - **全浏览器兼容**：无 ES Module、无 `??` / `?.`、无 `gap` / `inset` / `min()·clamp()`、无未加前缀的 `backdrop-filter`；附带 Promise / fetch / 数组 / 字符串 / DOM 垫片与 flex 退化方案。
 - **移动端友好**：viewport 适配、大按钮、触摸解锁音频、媒体查询布局。
 
@@ -51,21 +52,32 @@ first-grade-learning-land/
 │   └── 语文拓展.json
 └── assets/
     ├── css/
-    │   ├── base/            # 基础层：reset 变量 / 布局骨架
-    │   ├── components/      # 组件层：按钮 / 答题场景 / 口算 / 成长 / 学习 / 动画
+    │   ├── base/            # 基础层：reset / 布局骨架（顶栏、导航、卡片、页脚）
+    │   ├── components/      # 组件层：ui / quiz / abacus / anim / social / learn / shell
     │   ├── pages/           # 页面层：主页 / 拼音专区 / 写作专区 / 英语专区 / 教案
     │   └── compat.css       # 兼容层：老内核降级
     └── js/
-        ├── core/            # 基础层：compat 兼容 / config 配置 / utils 工具
-        ├── features/        # 业务层：images 图库 / speech 语音 / banks 题库
-        │                   #          content-* 内容 / abacus 口算引擎
-        │                   #          content-pinyin / content-writing / content-english
-        │                   #          content-lessons（教案中心数据）
-        └── pages/           # 应用层：各页面脚本（含 pinyin/writing/english-zone/test/lessons）
+        ├── vendor/          # 第三方：vue.global.prod.js（本地内置，离线可用）
+        ├── core/            # 基础层：compat 兼容 / config 配置+导航 / utils 工具
+        │                   #          store 全局状态（星星·徽章·自动朗读开关）
+        │                   #          shell 全站外壳 Vue 组件（顶栏/导航/页脚）
+        ├── services/        # 后台层：images 图库 / speech 语音 / banks 题库
+        │                   #          content-* 各科内容与生成器 / abacus 口算引擎
+        │                   #          anim 人物动画 / content-lessons 教案数据
+        ├── views/           # 前台层：每个页面一个 Vue 组件（App.views.xxx）
+        └── app.js           # 启动器：读 data-view → createApp → mount
 ```
 
 **分层加载顺序**（每个 HTML 末尾按依赖顺序引入）：
-`core/compat.js → core/config.js → core/utils.js → features/* → pages/*.js`
+`vendor/vue → core/compat → core/config → core/utils → core/store → core/shell → services/images → services/speech → services/banks → services/content-*（本页）→ views/本页视图 → app.js`
+
+**页面怎么写**：HTML 只写基础部分，其余全交给 JS：
+
+```html
+<div id="app" data-view="abacus"></div>
+<script src="assets/js/vendor/vue.global.prod.js"></script>
+<!-- core → services → views/abacus-view.js → app.js -->
+```
 
 ---
 
@@ -75,7 +87,7 @@ first-grade-learning-land/
 2. 在 `题库/manifest.json` 里登记文件与 `type`（`math` / `chinese` / `problems` / `pinyin` / `english`）。
 3. 系统加载时自动把多份真题合并进题库池；抽题时**真题 + 内置生成器**混合出现。
 4. 应用题生成器包含 `add / sub / add2 / sub2 / diff / ord` 等题型；数学含口算、比大小、填空、看图列式、解决问题、找规律、排队、乘除法与混合运算；语文含拼音、笔画、量词、多音字、反义词、课文、阅读、组词、造句、连词成句等。
-5. 题型可继续在 `assets/js/features/content-*.js` 中扩展生成器，并在 `manifest.json` 增加真题即可。
+5. 题型可继续在 `assets/js/services/content-*.js` 中扩展生成器，并在 `manifest.json` 增加真题即可。
 
 > 若 `题库/` 加载失败（例如本地以 `file://` 直接打开），页面会自动回退到**内置随机题库**，功能不受影响。
 

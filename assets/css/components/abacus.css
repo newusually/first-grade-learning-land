@@ -47,6 +47,8 @@
 .e.gold { -webkit-filter: drop-shadow(0 0 6px #ffd54f); filter: drop-shadow(0 0 6px #ffd54f); }
 .e.blue { -webkit-filter: drop-shadow(0 0 6px #4fc3f7); filter: drop-shadow(0 0 6px #4fc3f7); }
 .e.count { -webkit-transform: scale(1.18); transform: scale(1.18); -webkit-filter: drop-shadow(0 0 8px #ffeb3b); filter: drop-shadow(0 0 8px #ffeb3b); }
+.ab-stage .e { width: 1em; height: 1em; }
+.ab-stage .e svg { width: 100%; height: 100%; display: block; }
 .espace { display: inline-block; width: 14px; }
 @-webkit-keyframes popInR { 0% { -webkit-transform: translateX(20px) scale(0); transform: translateX(20px) scale(0); } 80% { -webkit-transform: scale(1.15); transform: scale(1.15); } 100% { -webkit-transform: scale(1); transform: scale(1); } }
 @keyframes popInR { 0% { -webkit-transform: translateX(20px) scale(0); transform: translateX(20px) scale(0); } 80% { -webkit-transform: scale(1.15); transform: scale(1.15); } 100% { -webkit-transform: scale(1); transform: scale(1); } }
@@ -117,7 +119,8 @@
 
 /* 图形选择 */
 .emo-row { text-align: center; margin: 8px 0; line-height: 2; }
-.emo { display: inline-block; font-size: 30px; margin: 0 2px; cursor: pointer; }
+.emo { display: inline-block; font-size: 30px; margin: 0 2px; cursor: pointer; width: 1em; height: 1em; }
+.emo svg { width: 100%; height: 100%; display: block; }
 
 /* 步骤与语音 */
 #steps {

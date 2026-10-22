@@ -2,7 +2,7 @@
  * abacus.js — 业务层 / 口算动画引擎
  * 支持模式：add 加法 / sub 减法 / carry 凑十法 / mul 乘法 / div 除法 / mixed 混合。
  * 用 SVG 图片做动画（动物/植物/水果），含语音朗读与音效。
- * 用法（见 pages/abacus-page.js）：App.Abacus.run(els, S) / stop / renderPicker / sizeRow。
+ * 用法（见 views/abacus-view.js）：App.Abacus.run(els, S) / stop / renderPicker / sizeRow。
  * 兼容：不使用 ?? ?.，不使用 await，纯回调/定时器。
  */
 (function (w) {
@@ -50,8 +50,31 @@
   function spacer() { var s = document.createElement("span"); s.className = "espace"; s.textContent = " "; return s; }
 
   function sizeRow(S) {
-    var total = (S.mode === "sub") ? S.a : (S.mode === "mul" ? S.a * S.b : (S.mode === "div" ? S.a : S.a + S.b));
-    if ($( "row")) { $("row").style.fontSize = total <= 10 ? "46px" : total <= 16 ? "38px" : "30px"; }
+    var total = (curMode === "sub") ? S.a : (curMode === "mul" ? S.a * S.b : (curMode === "div" ? S.a : S.a + S.b));
+    if ($("row")) { $("row").style.fontSize = total <= 10 ? "46px" : total <= 16 ? "38px" : "30px"; }
+  }
+
+  /* 混合模式：随机抽一种运算，并把数字调成该运算合法范围（数字同步显示在控件上） */
+  function pickMixed(S) {
+    var modes = ["add", "sub", "carry", "mul", "div"];
+    var m = modes[Math.floor(Math.random() * modes.length)];
+    if (m === "mul") {
+      S.a = 2 + Math.floor(Math.random() * 3);
+      S.b = 2 + Math.floor(Math.random() * 3);
+    } else if (m === "div") {
+      var b2 = 2 + Math.floor(Math.random() * 3), q = 2 + Math.floor(Math.random() * 3);
+      S.b = b2; S.a = b2 * q; if (S.a > 12) { S.a = 12; S.b = 3; }
+    } else if (m === "sub") {
+      if (S.a <= S.b) S.a = Math.min(20, S.b + 2 + Math.floor(Math.random() * 6));
+      if (S.a > 20) S.a = 20;
+      if (S.b >= S.a) S.b = Math.max(1, S.a - 1);
+      if (S.b < 1) S.b = 1;
+    } else {
+      if (S.a > 10) S.a = 10;
+      if (S.a + S.b > 20) S.b = 20 - S.a;
+      if (S.b < 1) S.b = 1;
+    }
+    return m;
   }
 
   /* ---------------- 步骤引擎 ---------------- */
@@ -279,6 +302,9 @@
   // 用明确的队列构造（避免闭包变量混乱）
   function buildQueue(S, els) {
     var a = S.a, b = S.b, m = S.mode;
+    if (m === "mixed") m = pickMixed(S);   // 混合：本题实际运算 + 数字适配
+    curMode = m;
+    a = S.a; b = S.b;
     if (m === "mul") {
       for (var g = 0; g < a; g++) {
         if (g > 0) push(180, function () { if ($("row")) $("row").appendChild(spacer()); });

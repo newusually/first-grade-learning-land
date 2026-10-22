@@ -7,8 +7,9 @@
 <link rel="stylesheet" href="assets/css/base/reset.css">
 <link rel="stylesheet" href="assets/css/base/layout.css">
 <link rel="stylesheet" href="assets/css/components/ui.css">
-<link rel="stylesheet" href="assets/css/components/quiz.css">
+<link rel="stylesheet" href="assets/css/components/shell.css">
 <link rel="stylesheet" href="assets/css/compat.css">
+<link rel="stylesheet" href="assets/css/components/quiz.css">
 <script>
 (function () {
   var h = document.documentElement;
@@ -19,59 +20,18 @@
 </script>
 </head>
 <body>
-<div class="wrap">
-  <div class="topbar">
-    <div class="brand"><span class="emj">🔡</span>英语测试</div>
-    <a class="btn spk" href="主页.html">🏠 主页</a>
-  </div>
-
-  <nav class="nav">
-    <a href="主页.html"><span class="emj">🏠</span>主页</a>
-    <a href="口算动画课堂.html"><span class="emj">🧮</span>口算</a>
-    <a href="看图学应用.html"><span class="emj">🍎</span>看图应用</a>
-    <a href="数学测试卷.html"><span class="emj">📝</span>数学</a>
-    <a href="语文测试卷.html"><span class="emj">🔤</span>语文</a>
-    <a href="成长小课堂.html"><span class="emj">🛡️</span>成长</a>
-    <a href="语文学习.html"><span class="emj">📚</span>语文学习</a>
-    <a href="拼音专区.html"><span class="emj">🔡</span>拼音</a>
-    <a href="写作专区.html"><span class="emj">✍️</span>写作</a>
-    <a class="active" href="英语专区.html"><span class="emj">🔡</span>英语</a>
-    <a href="巩固练习.html"><span class="emj">🎯</span>巩固</a>
-      <a href="教案中心.html"><span class="emj">📖</span>教案</a>
-  </nav>
-
-  <div class="page-title">🔡 英语小测试</div>
-  <div class="page-sub">选词 · 听力 · 拼写 · 完形填空（真题随机抽）</div>
-
-  <div class="scorebar"><span id="sc">0</span> 分 · 第 <span id="no">1</span> 题
-    <button class="btn spk" id="spkBtn">🔊 再读一次</button></div>
-
-  <div class="card" id="card">
-    <div id="qno" class="qno"></div>
-    <div id="qtext" class="qtext"></div>
-    <div id="passageBox"></div>
-    <div id="scene"></div>
-    <div id="body2"></div>
-    <div id="eq" class="eqshow"></div>
-    <div id="vd" class="verdict"></div>
-    <div id="ansarea"></div>
-  </div>
-
-  <div class="footer">做完点「看成绩」，再去薄弱点巩固练一练！（英文发音需设备支持英文语音）</div>
-</div>
-
+<div id="app" data-view="englishTest"></div>
+<script src="assets/js/vendor/vue.global.prod.js"></script>
 <script src="assets/js/core/compat.js"></script>
 <script src="assets/js/core/config.js"></script>
 <script src="assets/js/core/utils.js"></script>
-<script src="assets/js/features/images.js"></script>
-<script src="assets/js/features/speech.js"></script>
-<script src="assets/js/features/banks.js"></script>
-<script src="assets/js/features/content-problems.js"></script>
-<script src="assets/js/features/content-math.js"></script>
-<script src="assets/js/features/content-chinese.js"></script>
-<script src="assets/js/features/content-chinese-learn.js"></script>
-<script src="assets/js/features/content-social.js"></script>
-<script src="assets/js/features/content-english.js"></script>
-<script src="assets/js/pages/english-test-page.js"></script>
+<script src="assets/js/core/store.js"></script>
+<script src="assets/js/core/shell.js"></script>
+<script src="assets/js/services/images.js"></script>
+<script src="assets/js/services/speech.js"></script>
+<script src="assets/js/services/banks.js"></script>
+<script src="assets/js/services/content-english.js"></script>
+<script src="assets/js/views/english-test-view.js"></script>
+<script src="assets/js/app.js"></script>
 </body>
 </html>

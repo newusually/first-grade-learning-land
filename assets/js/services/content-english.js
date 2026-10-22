@@ -2,7 +2,7 @@
  * content-english.js — 业务层 / 英语专区 内容
  * 模块：字母、单词、组词(CVC拼写)、句子、完形填空、听力、背诵、记忆妙招。
  * 英文朗读使用 App.Speech.speakEn（需设备支持英文语音，无则静默）。
- * 数据驱动：页面（pages/english-zone-page.js）负责渲染与交互。
+ * 数据驱动：视图（views/english-zone-view.js）负责渲染与交互。
  */
 (function (w) {
   "use strict";

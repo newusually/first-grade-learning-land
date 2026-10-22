@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>教案中心 - 一年级至六年级 · 人教版</title>
+<title>教案中心 - 一年级趣味学习乐园</title>
 <link rel="stylesheet" href="assets/css/base/reset.css">
 <link rel="stylesheet" href="assets/css/base/layout.css">
 <link rel="stylesheet" href="assets/css/components/ui.css">
+<link rel="stylesheet" href="assets/css/components/shell.css">
+<link rel="stylesheet" href="assets/css/compat.css">
 <link rel="stylesheet" href="assets/css/components/anim.css">
 <link rel="stylesheet" href="assets/css/pages/lessons.css">
-<link rel="stylesheet" href="assets/css/compat.css">
 <script>
 (function () {
   var h = document.documentElement;
@@ -20,50 +21,18 @@
 </script>
 </head>
 <body>
-<div class="wrap">
-  <div class="topbar">
-    <div class="brand"><span class="emj">📚</span>教案中心</div>
-    <a class="btn spk" href="主页.html">🏠 主页</a>
-  </div>
-
-  <nav class="nav">
-    <a href="主页.html"><span class="emj">🏠</span>主页</a>
-    <a href="口算动画课堂.html"><span class="emj">🧮</span>口算</a>
-    <a href="看图学应用.html"><span class="emj">🍎</span>看图应用</a>
-    <a href="数学测试卷.html"><span class="emj">📝</span>数学</a>
-    <a href="语文测试卷.html"><span class="emj">🔤</span>语文</a>
-    <a href="成长小课堂.html"><span class="emj">🛡️</span>成长</a>
-    <a href="语文学习.html"><span class="emj">📚</span>语文学习</a>
-    <a href="拼音专区.html"><span class="emj">🔡</span>拼音</a>
-    <a href="写作专区.html"><span class="emj">✍️</span>写作</a>
-    <a href="英语专区.html"><span class="emj">🔡</span>英语</a>
-    <a href="巩固练习.html"><span class="emj">🎯</span>巩固</a>
-    <a class="active" href="教案中心.html"><span class="emj">📖</span>教案</a>
-  </nav>
-
-  <div class="page-title">📖 人教版 教案中心</div>
-  <div class="page-sub">一年级 ～ 六年级 · 语文 / 数学 / 英语 · 单元整体教学设计</div>
-
-  <div class="mascot-row" id="mascotRow"></div>
-
-  <div class="lp-controls">
-    <div class="lp-grades" id="gradeBox"></div>
-    <div class="lp-subjects" id="subjectBox"></div>
-  </div>
-
-  <div class="lp-note" id="noteBox"></div>
-
-  <div class="lp-list" id="list"></div>
-
-  <div class="footer">结合人民教育出版社（统编版 / 人教版PEP）教材目录整理，供老师备课、家长辅导、学生预习参考。</div>
-</div>
-
+<div id="app" data-view="lessons"></div>
+<script src="assets/js/vendor/vue.global.prod.js"></script>
 <script src="assets/js/core/compat.js"></script>
 <script src="assets/js/core/config.js"></script>
 <script src="assets/js/core/utils.js"></script>
-<script src="assets/js/features/images.js"></script>
-<script src="assets/js/features/speech.js"></script>
-<script src="assets/js/features/content-lessons.js"></script>
-<script src="assets/js/pages/lessons-page.js"></script>
+<script src="assets/js/core/store.js"></script>
+<script src="assets/js/core/shell.js"></script>
+<script src="assets/js/services/images.js"></script>
+<script src="assets/js/services/speech.js"></script>
+<script src="assets/js/services/banks.js"></script>
+<script src="assets/js/services/content-lessons.js"></script>
+<script src="assets/js/views/lessons-view.js"></script>
+<script src="assets/js/app.js"></script>
 </body>
 </html>

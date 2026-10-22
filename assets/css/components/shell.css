@@ -1,0 +1,84 @@
+/*
+ * shell.css — 组件层 / 全站外壳（Vue site-shell）
+ * 顶栏右侧（星星/徽章/自动朗读开关）、徽章弹层、学习档案、场景标签等。
+ * 规范：不用 gap/inset/min()/clamp()，flex 全部带 -webkit- 前缀。
+ */
+.tb-right {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: flex;
+  -webkit-box-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+}
+.tb-star {
+  font-size: 14px;
+  font-weight: bold;
+  color: #e65100;
+  background: #fff3e0;
+  border-radius: 12px;
+  padding: 4px 9px;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+.tb-badges {
+  cursor: pointer;
+  font-size: 15px;
+  letter-spacing: 1px;
+  margin-right: 6px;
+  padding: 3px 6px;
+  border-radius: 12px;
+  background: #fff8e1;
+  border: 1px dashed #ffcc80;
+}
+.tb-badges em { font-style: normal; }
+.tb-badges em.off { opacity: .35; -webkit-filter: grayscale(1); filter: grayscale(1); }
+
+.badge-pop {
+  background: #fff;
+  border: 2px solid #ffe0b2;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  -webkit-box-shadow: 0 4px 14px rgba(120, 90, 40, 0.12);
+  box-shadow: 0 4px 14px rgba(120, 90, 40, 0.12);
+}
+.badge-pop .bp-title { font-size: 15px; font-weight: bold; color: #f4511e; margin-bottom: 6px; }
+.badge-pop .bp-grid { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; }
+.badge-pop .bp-item {
+  width: 108px; margin: 5px; padding: 8px 6px; text-align: center;
+  background: #fff8e1; border: 2px solid #ffe0b2; border-radius: 12px;
+}
+.badge-pop .bp-item.off { opacity: .45; -webkit-filter: grayscale(1); filter: grayscale(1); }
+.badge-pop .bp-i { display: block; font-size: 26px; }
+.badge-pop .bp-n { display: block; font-size: 13px; font-weight: bold; color: #5a3a1e; margin-top: 2px; }
+.badge-pop .bp-d { display: block; font-size: 11px; color: #9b8a72; line-height: 1.4; margin-top: 2px; }
+
+/* 主页学习档案 */
+.home-stat { text-align: center; }
+.home-stat .hs-title { font-size: 17px; font-weight: bold; color: #f4511e; margin-bottom: 8px; }
+.home-stat .hs-row {
+  display: -webkit-box; display: -webkit-flex; display: flex;
+  -webkit-box-pack: justify; -webkit-justify-content: space-between; justify-content: space-between;
+  font-size: 14px; color: #6b5640; padding: 6px 10px; margin: 4px 0;
+  background: #fff8e1; border-radius: 10px;
+}
+.home-stat .hs-row b { color: #e65100; }
+.home-stat .hs-badges { font-size: 24px; letter-spacing: 4px; margin: 8px 0 4px; }
+.home-stat .hs-badges span.off { opacity: .35; -webkit-filter: grayscale(1); filter: grayscale(1); }
+
+/* 场景行标签（应用题里的 👦 / 👧） */
+.scene .rlabel { font-size: 22px; margin-right: 4px; }
+.scap { font-size: 13px; color: #888; margin-top: 6px; text-align: center; }
+
+/* 顶部工具条（各页小按钮组） */
+.gbar, .lvbar { text-align: center; margin-bottom: 10px; }
+.gbar .btn, .lvbar .lv { margin: 3px 5px; }
+.lp-actions { text-align: center; margin: 8px 0; }
+
+/* 写作/仿写配图 */
+.imit-pic { text-align: center; margin-bottom: 8px; }
+.imit-pic svg { width: 84px; height: 84px; }
+
+/* 教案中心按钮微调 */
+.lp-grades .gbtn, .lp-subjects .sbtn { -webkit-user-select: none; user-select: none; }

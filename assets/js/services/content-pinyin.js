@@ -2,7 +2,7 @@
  * content-pinyin.js — 业务层 / 拼音专区 内容
  * 模块：写法（四线三格）、组成（声韵调拼合）、拼读、形象记忆、四声朗读、组词填字。
  * 复用 App.ChineseLearn.pinyin 的声母/韵母/整体认读数据，避免重复。
- * 数据驱动：页面（pages/pinyin-zone-page.js）负责渲染与交互。
+ * 数据驱动：视图（views/pinyin-zone-view.js）负责渲染与交互。
  */
 (function (w) {
   "use strict";

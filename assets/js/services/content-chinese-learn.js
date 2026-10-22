@@ -1,7 +1,7 @@
 /*
  * content-chinese-learn.js — 业务层 / 语文学习小课堂 内容
  * 模块：拼音认读跟读、认字卡片、组词造句引导、课文背诵、知识点总结（分类整理）。
- * 数据驱动，页面（pages/chinese-learn-page.js）负责渲染与交互。
+ * 数据驱动，视图（views/chinese-learn-view.js）负责渲染与交互。
  */
 (function (w) {
   "use strict";
