@@ -42,6 +42,13 @@
     for (var i = 0; i < list.length; i++) { if (list[i].name === name) return list[i]; }
     return null;
   }
+  // 这台设备上有没有某个中文嗓音（用于判断"默认嗓音装没装"）
+  function hasZhVoice(name) {
+    if (!name || !("speechSynthesis" in w)) return false;
+    try { return !!byName(zhList(), name); } catch (e) { return false; }
+  }
+  // 默认嗓音（HsiaoChen 台湾）在这台设备是否缺失
+  function defaultZhMissing() { return !hasZhVoice(ZH_DEFAULT[0]); }
   // 按默认清单挑一个（用户没手动选过声音时才用）
   function defaultZh(zs) {
     var i, j, v;
@@ -563,6 +570,9 @@
 
   App.Speech = {
     stop: stopAll,
+    hasZhVoice: hasZhVoice,
+    defaultZhMissing: defaultZhMissing,
+    defaultZhName: function () { return ZH_DEFAULT[0]; },
     speak: speak,
     estimate: estimate,
     cps: function () { return { zh: CPS.zh, en: CPS.en }; },

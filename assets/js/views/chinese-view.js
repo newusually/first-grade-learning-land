@@ -77,7 +77,7 @@
         var i;
         for (i = 0; i < (q.left || []).length; i++) this.doneL.push(false);
         for (i = 0; i < (q.right || []).length; i++) this.doneR.push(false);
-        Speech.autoRead(q.say);
+        App.ReadQ.read(q);
       },
       miCls: function (i, side) {
         var sel = side === "L" ? this.selL === i : this.selR === i;

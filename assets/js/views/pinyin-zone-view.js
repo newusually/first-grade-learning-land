@@ -160,8 +160,18 @@
       blendCls: function (i) { return this.quizCls(this.blend, i); },
       newCompose: function () { this.compose = blank(PZ.composeQuiz()); },
       newBlend: function () { this.blend = blank(PZ.blendQuiz()); },
-      newTone: function () { this.tone = blank(PZ.toneQuiz()); },
-      newFill: function () { this.fill = blank(PZ.fillQuiz()); },
+      newTone: function () { this.tone = blank(PZ.toneQuiz()); this.sayQuiz(this.tone.q, "tone"); },
+      newFill: function () { this.fill = blank(PZ.fillQuiz()); this.sayQuiz(this.fill.q, "fill"); },
+      // 出题后先念题目，再把选项一个个念出来
+      sayQuiz: function (q, mode) {
+        if (!q || !App.Speech) return;
+        var t = "";
+        if (mode === "tone") t = "这个拼音是" + (q.syl || "") + "，" + (q.zi || "") + "。它读第几声？";
+        else if (mode === "fill") t = "看拼音" + (q.py || "") + "，请选出正确的字。";
+        else t = q.q || q.t || q.text || "";
+        if (App.ReadQ) App.ReadQ.readText(t, q.opts, { force: true });
+        else App.Speech.speak(t);
+      },
       pinCompose: function () {
         var q = this.compose.q;
         this.compose.res = q.blended;

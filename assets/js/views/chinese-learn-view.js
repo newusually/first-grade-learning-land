@@ -124,6 +124,15 @@
             explain: "通顺的句子是：" + j.tmpl.replace("____", j.opts[j.ans]) };
         }
         this.pracIdx++;
+        // 出题后先念题目，再把选项一个个念出来
+        var p = this.prac;
+        if (p && App.Speech) {
+          var t = p.kind === "zuci"
+            ? "请给“" + p.zi + "”组一个词。"
+            : "请把句子补充完整：" + String(p.tmpl || "").replace(/_+/g, "什么");
+          if (App.ReadQ) App.ReadQ.readText(t, p.opts, { force: true });
+          else App.Speech.speak(t);
+        }
       },
       pracCls: function (i) {
         if (!this.prac.done) return {};

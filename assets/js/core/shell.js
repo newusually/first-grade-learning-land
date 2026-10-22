@@ -33,6 +33,10 @@
         styles: (App.Speech && App.Speech.styleVoices) ? App.Speech.styleVoices() : [],
         vLoading: true,
         vTry: 0,
+        // 默认嗓音（台湾 HsiaoChen）这台设备装没装
+        missDefault: false,
+        defName: (App.Speech && App.Speech.defaultZhName) ? App.Speech.defaultZhName() : "",
+        showWhy: false,
         // 暂存草稿：点试听只改这里，点「保存」才写进 Store（全站生效）
         draft: { zh: "", en: "", cloud: "", style: "" }
       };
@@ -94,11 +98,19 @@
         this.clouds = (App.Speech && App.Speech.cloudVoices) ? App.Speech.cloudVoices() : [];
         this.styles = (App.Speech && App.Speech.styleVoices) ? App.Speech.styleVoices() : [];
         this.vLoading = !this.voices.length;
+        if (App.Speech && App.Speech.defaultZhMissing) {
+          try { this.missDefault = App.Speech.defaultZhMissing(); } catch (e2) {}
+        }
         // Edge 在线人声异步返回慢：轮询最多约 20 秒
         if (this.vLoading && this.vTry < 40) {
           this.vTry++;
           setTimeout(function () { if (self.showVoices) self.refreshVoices(); }, 500);
         }
+      },
+      // 本机没有台湾嗓音时：一键改用「云端台湾国语」（真的从网络拉，不依赖系统语音包）
+      useCloudTW: function () {
+        this.draft.cloud = "g-tw";
+        if (App.Speech) App.Speech.demoCloud("g-tw");
       },
       // 注意：以下"选择/试听"都只改草稿并试听，不写入 Store；要点「保存」才全站生效
       pickV: function (v) {
@@ -175,6 +187,18 @@
       '<div class="voice-pop" v-if="showVoices">',
       '<div class="vp-title">🎙️ 选择朗读声音 <span class="vp-close" @click="cancelV">✕</span></div>',
       '<div class="vp-note">🔔 点名字/▶试听只是<b>预览</b>，选好后点最下面的 <b>💾 保存</b>，本站每个页面都会用这个声音。</div>',
+      '<div class="vp-warn" v-if="missDefault && !vLoading">',
+      '<div class="vp-warn-t">⚠️ 这台设备没有默认嗓音「{{defName}}」</div>',
+      '<div class="vp-warn-d">它标着「在线」，指的是<b>合成在微软云端做</b>；但能不能出现在这个列表里，要看 Windows 有没有装「中文(繁体，台湾)」语言包。这台机器没装，所以浏览器列不出来。</div>',
+      '<div class="vp-warn-b">',
+      '<button class="btn" @click="useCloudTW">🌐 改用云端台湾国语（联网获取，保存后生效）</button>',
+      '<button class="btn ghost" @click="showWhy = !showWhy">{{showWhy ? "收起" : "怎么装上它？"}}</button>',
+      '</div>',
+      '<div class="vp-how" v-if="showWhy">',
+      '<div>Windows 11：设置 → 时间和语言 → 语言和区域 → 添加语言 → 搜「中文(繁体)」/「中文(台湾)」→ 勾选<b>语音</b> → 装完重启浏览器。</div>',
+      '<div>Windows 10：设置 → 时间和语言 → 语音 → 管理语音 → 添加「中文(台湾)」语音包。</div>',
+      '<div>装好后重新打开本页，它会自动出现在下面「中文 · 在线人声」里。</div>',
+      '</div></div>',
       '<div class="vp-sub">☁️ 云端嗓音（联网，声音更多；失败自动回退本机）</div>',
       '<div class="vlist">',
       '<div class="vitem cloud" v-for="v in clouds" :key="\'c\'+v.id" :class="{on: curCloud === v.id}" @click="pickCloud(v)">',

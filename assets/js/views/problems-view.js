@@ -129,7 +129,7 @@
         this.$nextTick(function () {
           if (q.kind !== "ord" && self.$refs.inp) self.$refs.inp.focus();
         });
-        Speech.autoRead(q.text);
+        App.ReadQ.read(q);
       },
       goGone: function (from, n) {
         var cells = this.allCells(), t = 400, self = this;

@@ -138,24 +138,35 @@
       },
 
       /* ---------- 答题 ---------- */
-      readCur: function () {
+      // force=1（点「🔊读题」按钮）时强制念；切题自动念时尊重「自动朗读」开关
+      readCur: function (force) {
         var q = this.cur;
         if (!q || !App.Speech) return;
-        var txt = q.s;
-        if (q.t === "single" || q.t === "multiple") {
-          txt += "。" + (q.o || []).join("，");
-        } else if (q.t === "judge") {
-          txt += "。请判断对错。";
-        } else if (q.t === "fill" || q.t === "calculation") {
-          txt += "。请写出答案。";
-        } else if (q.t === "sorting") {
-          txt += "。" + (q.o || []).join("，");
-        } else if (q.t === "matching") {
-          txt += "。" + (q.o && q.o.left || []).join("，");
-        } else if (q.t === "pinyin_word" && q.o && q.o.words) {
-          txt = "看拼音写词语：" + (q.o.words[0] && q.o.words[0].pinyin || []).join(" ");
+        if (!force && App.Store && App.Store.state && !App.Store.state.autoRead) return;
+        var R = App.ReadQ;
+        var list = [];
+        if (R) {
+          var st = R.stem(q);
+          if (q.t === "pinyin_word" && q.o && q.o.words && q.o.words[0]) {
+            st = "看拼音写词语：" + (q.o.words[0].pinyin || []).join(" ");
+          }
+          if (st) list.push({ t: st });
+          var ot = R.optText(R.optsOf(q), false);
+          if (ot) list.push({ t: ot });
+          else if (q.t === "fill" || q.t === "calculation" || q.t === "short_answer") list.push({ t: "请写出答案。" });
+          else if (q.t === "cloze") list.push({ t: "请把空填上。" });
+          else if (q.t === "judge") list.push({ t: "请判断对错。" });
+        } else {
+          var txt = q.s;
+          if (q.t === "single" || q.t === "multiple") txt += "。" + (q.o || []).join("，");
+          else if (q.t === "judge") txt += "。请判断对错。";
+          else if (q.t === "fill" || q.t === "calculation") txt += "。请写出答案。";
+          else if (q.t === "sorting") txt += "。" + (q.o || []).join("，");
+          else if (q.t === "matching") txt += "。" + (q.o && q.o.left || []).join("，");
+          else if (q.t === "pinyin_word" && q.o && q.o.words) txt = "看拼音写词语：" + (q.o.words[0] && q.o.words[0].pinyin || []).join(" ");
+          list.push({ t: txt });
         }
-        App.Speech.autoRead(txt);
+        if (list.length) App.Speech.seq(list);
       },
       isAnswered: function (i) {
         var q = this.qs[i];
@@ -373,7 +384,7 @@
       '<div class="card ex-qcard">',
       '<div class="ex-qmeta"><span class="ex-qno">第 {{idx+1}} 题</span>',
       '<span class="ex-qtype">{{curTypeName}}</span>',
-      '<button class="btn spk" @click="readCur">🔊 读题</button></div>',
+      '<button class="btn spk" @click="readCur(1)">🔊 读题</button></div>',
 
       /* 题干 */
       '<div class="ex-qtext" v-if="cur && cur.t !== \'cloze\' && cur.t !== \'pinyin_word\'">{{cur.s}}</div>',

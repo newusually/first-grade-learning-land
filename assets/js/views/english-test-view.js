@@ -108,10 +108,16 @@
         this.spell = mkSpell(q);
         var self = this;
         setTimeout(function () {
-          if (q.type === "listen") Speech.speakEn(q.say);
-          else if (q.type === "spell") Speech.speakEn(q.word);
-          else if (q.type === "reading") Speech.speakEn(q.passage, { rate: 0.8 });
-          else if (q.speak) Speech.speakEn(q.speak);
+          // 先念题目，再把选项一个个念出来（顺序播报，不会被下一句掐断）
+          var t = "";
+          if (q.type === "listen") t = q.say || "";
+          else if (q.type === "spell") t = q.word || "";
+          else if (q.type === "reading") t = q.passage || "";
+          else if (q.speak) t = q.speak;
+          else t = q.q || q.text || "";
+          var os = (q.opts && q.opts.length) ? q.opts : null;
+          if (App.ReadQ) App.ReadQ.readText(t, os, { en: true, force: true });
+          else Speech.speakEn(t, { rate: 0.85 });
         }, 600);
       },
       optCls: function (i) {

@@ -182,7 +182,7 @@
         this.scene = this.buildScene(q);
         var self = this;
         this.$nextTick(function () { if (self.needInput && !self.isOrd && self.$refs.inp) self.$refs.inp.focus(); });
-        Speech.autoRead(q.say || q.text || "");
+        App.ReadQ.read(q);
       },
       miCls: function (i, side) {
         var sel = side === "L" ? this.selL === i : this.selR === i;

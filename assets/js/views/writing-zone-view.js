@@ -131,8 +131,13 @@
       }
     },
     mounted: function () {
-      this.readPic();
-      Speech.autoRead("写作专区，看图写话，还能练量词和标点！");
+      // 欢迎语和第一道题排队念（不再互相掐断）
+      var on = !(App.Store && App.Store.state && App.Store.state.autoRead === false);
+      if (!on || !App.Speech) return;
+      App.Speech.seq([
+        { t: "写作专区，看图写话，还能练量词和标点！" },
+        { t: "看图写话。提示词：" + this.pic.words.join("、") + "。请用这些词写一句话。" }
+      ]);
     },
     methods: {
       svg: function (id) { return IMG.svg(id) || ""; },
@@ -171,10 +176,22 @@
           if (sayTxt) Speech.speak(sayTxt);
         } else { Speech.sfx.wrong(); }
       },
-      newImit: function () { this.imit = blank(WZ.imitateQuiz()); },
-      newOrder: function () { this.order = mkOrder(WZ.orderQuiz()); },
-      newMeas: function () { this.meas = blank(WZ.measureQuiz()); },
-      newPunct: function () { this.punct = blank(WZ.punctQuiz()); },
+      newImit: function () { this.imit = blank(WZ.imitateQuiz()); this.sayQuiz(this.imit.q, "imit"); },
+      newOrder: function () { this.order = mkOrder(WZ.orderQuiz()); this.sayQuiz(this.order.q, "order"); },
+      newMeas: function () { this.meas = blank(WZ.measureQuiz()); this.sayQuiz(this.meas.q, "meas"); },
+      newPunct: function () { this.punct = blank(WZ.punctQuiz()); this.sayQuiz(this.punct.q, "punct"); },
+      // 出题后先念题目，再把选项一个个念出来
+      sayQuiz: function (q, mode) {
+        if (!q || !App.Speech) return;
+        var t = "", os = null;
+        if (mode === "imit") { t = "请把句子补充完整：" + String(q.tmpl || "").replace(/_+/g, "什么"); os = q.opts; }
+        else if (mode === "order") { t = "请把词语排成一句话。"; os = q.shuffled; }
+        else if (mode === "meas") { t = "请选一个量词：一什么" + (q.noun || "") + "？"; os = q.opts; }
+        else if (mode === "punct") { t = "请给句子加上标点：" + (q.sent || ""); os = q.opts; }
+        else { t = q.t || q.q || q.text || ""; os = q.opts; }
+        if (App.ReadQ) App.ReadQ.readText(t, os, { force: true });
+        else if (t) App.Speech.speak(t);
+      },
       orderPick: function (i) {
         if (this.order.used[i]) return;
         this.order.used[i] = true;

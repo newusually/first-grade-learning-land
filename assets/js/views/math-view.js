@@ -91,7 +91,7 @@
         this.scene = this.buildScene(q);
         var self = this;
         this.$nextTick(function () { if (q.type === "n" && self.$refs.inp) self.$refs.inp.focus(); });
-        Speech.autoRead(q.say);
+        App.ReadQ.read(q);
       },
       finish: function (ok, extra) {
         this.answered = true; this.eq = this.q.eq;

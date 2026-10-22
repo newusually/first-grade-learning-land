@@ -186,8 +186,10 @@
       }
     },
     mounted: function () {
-      this.playListen();
+      var self = this;
       Speech.autoRead("英语专区，点一点就能听到标准的英语发音！");
+      // 欢迎语念完再念第一道题（题目 + 选项），避免两句话互相掐断
+      setTimeout(function () { self.sayQuiz(self.listen.q, "listen"); }, 2800);
     },
     methods: {
       svg: function (id) { return IMG.svg(id) || ""; },
@@ -224,13 +226,26 @@
         var ok = i === box.q.ans;
         return { x: true, ok: ok, no: !ok };
       },
-      newCvc: function () { this.cvc = mkOrder(EZ.cvcQuiz()); },
-      newSent: function () { this.sent = mkOrder(EZ.sentenceQuiz()); },
-      newCloze: function () { this.cloze = blank(EZ.clozeQuiz()); },
-      newListen: function () { this.listen = blank(EZ.listenQuiz()); this.playListen(); },
+      newCvc: function () { this.cvc = mkOrder(EZ.cvcQuiz()); this.sayQuiz(this.cvc.q, "cvc"); },
+      newSent: function () { this.sent = mkOrder(EZ.sentenceQuiz()); this.sayQuiz(this.sent.q, "sent"); },
+      newCloze: function () { this.cloze = blank(EZ.clozeQuiz()); this.sayQuiz(this.cloze.q, "cloze"); },
+      newListen: function () { this.listen = blank(EZ.listenQuiz()); this.sayQuiz(this.listen.q, "listen"); },
       newReading: function () {
         var RD = (App.DATA.english && App.DATA.english.reading) || { pages: [] };
         this.rd = blank(rdQuiz(RD));
+        this.sayQuiz(this.rd.q, "reading");
+      },
+      // 英语出题统一播报：先念题目，再把选项一个个念出来（顺序播报不掐断）
+      sayQuiz: function (q, mode) {
+        if (!q || !App.Speech) return;
+        var t = "", os = null;
+        if (mode === "cloze") { t = q.text || ""; os = q.opts; }
+        else if (mode === "listen") { t = q.say || ""; os = q.opts; }
+        else if (mode === "cvc") { t = "Spell the word, " + (q.word || "") + "."; os = q.tiles; }
+        else if (mode === "sent") { t = "Put the words in order. " + (q.words || []).join(" "); os = q.shuffled; }
+        else if (mode === "reading") { t = q.passage || q.q || q.text || ""; os = q.opts; }
+        if (App.ReadQ) App.ReadQ.readText(t, os, { en: true, force: true });
+        else if (t) App.Speech.speakEn(t, { rate: 0.85 });
       },
       readPhonics: function (p) {
         Speech.speak(p.t + "，" + p.s);
