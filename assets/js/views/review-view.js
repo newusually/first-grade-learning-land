@@ -43,8 +43,8 @@
       '<span class="em idle" v-else v-for="c in s.cells" :key="c.i" :class="{gone: c.gone}" :style="{animationDelay: c.d + \'ms, \' + (c.d + 500) + \'ms\'}" v-html="svg(c.e)"></span>',
       '</template>',
       '</div>',
-      '<div class="brace" v-if="scene.brace"></div>',
-      '<div class="cap" :class="{q: scene.isQ}">{{scene.cap}}</div>',
+      '<brace-box v-if="scene.brace" :label="scene.cap" span-sel=".row"></brace-box>',
+      '<div class="cap" v-if="!scene.brace" :class="{q: scene.isQ}">{{scene.cap}}</div>',
       '</div>',
       '<div class="match" v-else-if="q.type === \'match\'">',
       '<div class="col"><div class="mi" v-for="(wd, i) in q.left" :key="\'L\'+i" :class="miCls(i, \'L\')" @click="pick(\'L\', i)">{{wd}}</div></div>',
@@ -140,7 +140,7 @@
           d = 80; var s3 = [];
           for (i = 0; i < q.a; i++) { s3.push(cell(q.e, i, d)); d += 90; }
           rows.push({ label: "", segs: [segC(s3)] });
-          cap = q.a + " " + q.u;
+          cap = q.a + " " + q.u; brace = true;
         } else if (q.kind === "diff") {
           var rA = [], rB = [];
           for (i = 0; i < q.a; i++) rA.push(cell(q.e, i, 100 + i * 90));
@@ -157,6 +157,7 @@
           var mo = d; d += 120;
           for (i = 0; i < q.b; i++) { m2.push(cell(q.e, 100 + i, d)); d += 120; }
           rows.push({ label: "", segs: [segC(m1), segO("＋", mo), segC(m2)] });
+          cap = "？" + q.u; brace = true; isQ = true;
         }
         return { rows: rows, cap: cap, brace: brace, isQ: isQ };
       },

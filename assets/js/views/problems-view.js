@@ -32,8 +32,8 @@
       '<span class="em idle" v-else v-for="c in s.cells" :key="c.i" :class="{gone: c.gone, lit: c.lit}" :style="{animationDelay: c.d + \'ms, \' + (c.d + 500) + \'ms\'}" v-html="svg(c.e)"></span>',
       '</template>',
       '</div>',
-      '<div class="brace" v-if="scene.brace"></div>',
-      '<div class="cap" :class="{q: scene.isQ}">{{scene.cap}}</div>',
+      '<brace-box v-if="scene.brace" :label="scene.cap" span-sel=".row"></brace-box>',
+      '<div class="cap" v-if="!scene.brace" :class="{q: scene.isQ}">{{scene.cap}}</div>',
       '</div>',
       '<div class="answer">',
       '<input ref="inp" type="text" inputmode="numeric" placeholder="？" autocomplete="off" v-model="answer" @keydown.enter="answered ? next() : check()">',
@@ -98,7 +98,7 @@
           d = 80; var s3 = [];
           for (i = 0; i < q.a; i++) { s3.push(cell(q.e, i, d)); d += 90; }
           rows.push(this.mkRow("", [segC(s3)]));
-          cap = q.a + " " + q.u;
+          cap = q.a + " " + q.u; brace = true;
         } else if (q.kind === "diff") {
           var rA = [], rB = [];
           for (i = 0; i < q.a; i++) rA.push(cell(q.e, i, 100 + i * 90));

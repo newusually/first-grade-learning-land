@@ -72,7 +72,9 @@
     App.Store.save();
     pickVoice();
   }
-  function demoVoice(name, kind) {
+  // 试听：opt.styleId 显式指定变声风格（面板里还没保存的暂存风格靠它预览）
+  function demoVoice(name, kind, opt) {
+    opt = opt || {};
     if (!("speechSynthesis" in w)) return;
     try {
       var vs = (kind === "en" ? enList() : zhList()).filter(function (v) { return v.name === name; })[0];
@@ -80,7 +82,7 @@
       var u = new w.SpeechSynthesisUtterance(kind === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！");
       u.lang = kind === "en" ? "en-US" : "zh-CN";
       if (vs) u.voice = vs;
-      var stD = currentStyle();
+      var stD = (typeof opt.styleId !== "undefined") ? styleGet(opt.styleId) : currentStyle();
       u.rate = 0.9;
       u.pitch = stD ? stD.pitch : (kind === "en" ? 1.0 : 1.15);
       w.speechSynthesis.speak(u);
@@ -471,7 +473,14 @@
     wrong: function () { tone(220, 0.25, "square", 0.08); }
   };
 
+  // 立刻停掉正在播放的一切（本机朗读 + 云端队列）
+  function stopAll() {
+    try { if ("speechSynthesis" in w) w.speechSynthesis.cancel(); } catch (e) {}
+    stopCloud();
+  }
+
   App.Speech = {
+    stop: stopAll,
     speak: speak,
     speakLocal: speakLocal,
     speakEn: speakEn,

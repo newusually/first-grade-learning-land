@@ -49,6 +49,7 @@
       '</div>',
       '<div v-once>',
       '<div id="say"></div><div id="steps"></div><div id="topLabel"></div><div id="row"></div>',
+      '<div id="braceBox" class="yb-brace"></div>',
       '<div id="qlabel" class="q"></div>',
       '<div class="eqbar">',
       '<span class="e-a" id="e-a">3</span><span class="e-op" id="e-op">＋</span><span class="e-b" id="e-b">2</span><span>=</span><span class="e-ans" id="e-ans">?</span>',
@@ -127,8 +128,8 @@
         if ($("topLabel")) $("topLabel").textContent = "";
         if ($("qlabel")) $("qlabel").textContent = "";
         if ($("steps")) $("steps").textContent = "";
-        var path = $("bracePath");
-        if (path) { path.style.transition = "none"; path.style.strokeDashoffset = 460; }
+        var bboxEl = $("braceBox");
+        if (bboxEl) { if (App.Brace) App.Brace.clear(bboxEl); else bboxEl.innerHTML = ""; }
         if ($("e-a")) $("e-a").textContent = this.S.a;
         if ($("e-b")) $("e-b").textContent = this.S.b;
         if ($("e-op")) $("e-op").textContent = this.opSym();

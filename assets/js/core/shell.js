@@ -32,7 +32,9 @@
         clouds: (App.Speech && App.Speech.cloudVoices) ? App.Speech.cloudVoices() : [],
         styles: (App.Speech && App.Speech.styleVoices) ? App.Speech.styleVoices() : [],
         vLoading: true,
-        vTry: 0
+        vTry: 0,
+        // 暂存草稿：点试听只改这里，点「保存」才写进 Store（全站生效）
+        draft: { zh: "", en: "", cloud: "", style: "" }
       };
     },
     computed: {
@@ -46,10 +48,17 @@
       },
       zhVoices: function () { return this.voices.filter(function (v) { return v.kind === "zh"; }); },
       enVoices: function () { return this.voices.filter(function (v) { return v.kind === "en"; }); },
-      curZh: function () { return this.st.voiceZh || ""; },
-      curEn: function () { return this.st.voiceEn || ""; },
-      curCloud: function () { return this.st.voiceCloud || ""; },
-      curStyle: function () { return this.st.voiceStyle || ""; },
+      curZh: function () { return this.draft.zh || ""; },
+      curEn: function () { return this.draft.en || ""; },
+      curCloud: function () { return this.draft.cloud || ""; },
+      curStyle: function () { return this.draft.style || ""; },
+      // 草稿和已保存的不一样 = 还没保存
+      vDirty: function () {
+        return this.curZh !== (this.st.voiceZh || "")
+          || this.curEn !== (this.st.voiceEn || "")
+          || this.curCloud !== (this.st.voiceCloud || "")
+          || this.curStyle !== (this.st.voiceStyle || "");
+      },
       zhOnline: function () { return this.voices.filter(function (v) { return v.kind === "zh" && v.online; }); },
       zhLocal: function () { return this.voices.filter(function (v) { return v.kind === "zh" && !v.online; }); }
     },
@@ -62,7 +71,17 @@
       openVoices: function () {
         this.showVoices = true;
         this.showBadges = false;
+        this.syncDraft();
         this.refreshVoices();
+      },
+      // 打开面板/取消时，把草稿同步回「已保存」的状态
+      syncDraft: function () {
+        this.draft = {
+          zh: this.st.voiceZh || "",
+          en: this.st.voiceEn || "",
+          cloud: this.st.voiceCloud || "",
+          style: this.st.voiceStyle || ""
+        };
       },
       refreshVoices: function () {
         var self = this;
@@ -81,55 +100,63 @@
           setTimeout(function () { if (self.showVoices) self.refreshVoices(); }, 500);
         }
       },
+      // 注意：以下"选择/试听"都只改草稿并试听，不写入 Store；要点「保存」才全站生效
       pickV: function (v) {
-        if (App.Speech) {
-          App.Speech.setVoice(v.name, v.kind);
-          App.Speech.demoVoice(v.name, v.kind);
-        }
+        if (v.kind === "en") this.draft.en = v.name; else this.draft.zh = v.name;
+        if (App.Speech) App.Speech.demoVoice(v.name, v.kind, { styleId: this.draft.style });
       },
       // 模板里不能直接写 App.Speech（作用域未定义会报错），一律走方法
       tryVoice: function (v) {
-        if (App.Speech) App.Speech.demoVoice(v.name, v.kind);
+        if (v.kind === "en") this.draft.en = v.name; else this.draft.zh = v.name;
+        if (App.Speech) App.Speech.demoVoice(v.name, v.kind, { styleId: this.draft.style });
       },
-      // 云端嗓音：选中即用，读题/拼音/英语全部走云端，联网失败自动回退本机
+      // 云端嗓音：选中即试听；保存后读题/拼音/英语全部走云端，联网失败自动回退本机
       pickCloud: function (v) {
-        if (App.Speech) {
-          App.Speech.setCloudVoice(v.id);
-          App.Speech.demoCloud(v.id);
-        }
+        this.draft.cloud = v.id;
+        if (App.Speech) App.Speech.demoCloud(v.id);
       },
       tryCloud: function (v) {
+        this.draft.cloud = v.id;
         if (App.Speech) App.Speech.demoCloud(v.id);
       },
       useLocal: function () {
-        if (App.Speech) {
-          App.Speech.setCloudVoice("");
-          App.Speech.speak("已换回本机声音");
-        }
+        this.draft.cloud = "";
+        if (App.Speech) App.Speech.speak("已换回本机声音，记得点保存");
       },
       // 本机变声风格：同一嗓音多种音色，离线可用
       pickStyle: function (s) {
-        if (App.Speech) {
-          App.Speech.setStyleVoice(s.id);
-          App.Speech.demoStyle(s.id);
-        }
+        this.draft.style = s.id;
+        if (App.Speech) App.Speech.demoStyle(s.id);
       },
       tryStyle: function (s) {
+        this.draft.style = s.id;
         if (App.Speech) App.Speech.demoStyle(s.id);
       },
       clearStyle: function () {
-        if (App.Speech) {
-          App.Speech.setStyleVoice("");
-          App.Speech.speak("已恢复原声");
-        }
+        this.draft.style = "";
+        if (App.Speech) App.Speech.speak("已恢复原声，记得点保存");
       },
       resetV: function () {
-        if (App.Speech) {
-          App.Speech.setVoice("", "zh");
-          App.Speech.setVoice("", "en");
-          App.Speech.speak("已恢复默认声音");
-        }
+        this.draft = { zh: "", en: "", cloud: "", style: "" };
+        if (App.Speech) App.Speech.speak("已恢复默认声音，记得点保存");
         this.refreshVoices();
+      },
+      // 💾 保存：写进 Store（localStorage）→ 本站所有页面朗读都用这套声音
+      saveV: function () {
+        if (App.Speech) {
+          App.Speech.setVoice(this.draft.zh, "zh");
+          App.Speech.setVoice(this.draft.en, "en");
+          App.Speech.setCloudVoice(this.draft.cloud);
+          App.Speech.setStyleVoice(this.draft.style);
+          App.Speech.stop();
+          App.Speech.speak("声音已保存，全部页面都用这个声音啦");
+        }
+        this.showVoices = false;
+      },
+      cancelV: function () {
+        if (App.Speech) App.Speech.stop();
+        this.syncDraft();
+        this.showVoices = false;
       }
     },
     template: [
@@ -146,7 +173,8 @@
       '</div>',
       '</div>',
       '<div class="voice-pop" v-if="showVoices">',
-      '<div class="vp-title">🎙️ 选择朗读声音 <span class="vp-close" @click="showVoices=false">✕</span></div>',
+      '<div class="vp-title">🎙️ 选择朗读声音 <span class="vp-close" @click="cancelV">✕</span></div>',
+      '<div class="vp-note">🔔 点名字/▶试听只是<b>预览</b>，选好后点最下面的 <b>💾 保存</b>，本站每个页面都会用这个声音。</div>',
       '<div class="vp-sub">☁️ 云端嗓音（联网，声音更多；失败自动回退本机）</div>',
       '<div class="vlist">',
       '<div class="vitem cloud" v-for="v in clouds" :key="\'c\'+v.id" :class="{on: curCloud === v.id}" @click="pickCloud(v)">',
@@ -196,8 +224,14 @@
       '</div>',
       '</div>',
       '<div class="vp-empty" v-if="vLoading">正在获取这台设备的声音列表…（在线人声需要等几秒）</div>',
-      '<div class="vp-foot"><button class="btn" @click="resetV">↩️ 恢复默认</button>',
-      '<span class="vp-tip">选好点名字就能换，换完自动播放一句试听</span></div>',      '</div>',
+      '<div class="vp-foot" :class="{dirty: vDirty}">',
+      '<button class="btn vsave" @click="saveV">💾 保存（全部页面生效）</button>',
+      '<button class="btn" @click="resetV">↩️ 恢复默认</button>',
+      '<button class="btn" @click="cancelV">✖ 取消</button>',
+      '<span class="vp-tip" v-if="vDirty">⚠️ 已经改了但还没保存，点「💾 保存」才会生效</span>',
+      '<span class="vp-tip" v-else>✅ 当前就是已保存的声音</span>',
+      '</div>',
+      '</div>',
       '<div class="badge-pop" v-if="showBadges">',
       '<div class="bp-title">🏅 我的徽章</div>',
       '<div class="bp-grid">',

@@ -28,6 +28,7 @@
     }
     var app = w.Vue.createApp(def);
     if (App.Shell) app.component("site-shell", App.Shell);
+    if (App.BraceBox) app.component("brace-box", App.BraceBox);
     app.config.errorHandler = function (err) {
       if (w.console && w.console.warn) w.console.warn("[view]", name, err && err.message);
     };

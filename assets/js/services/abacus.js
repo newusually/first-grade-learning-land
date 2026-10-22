@@ -239,19 +239,29 @@
       c = row.children[i];
       if ((c.className || "").indexOf("e") < 0) continue;
       var g = (c.dataset && c.dataset.grp) || c.getAttribute("data-grp") || "";
+      if (grp === "ALL") { out.push(c); continue; }   // ALL = 全部图案（原来永远匹配不到，括号就空了）
       if (g === grp) out.push(c);
     }
     return out;
   }
   var _brace = { grp: "ALL", label: "", from: 0, to: -1 };
   function braceShow() {
-    var stage = stageEl();
-    if (!stage || !App.Draw) return;
     var nodes = groupNodes(_brace.grp);
     if (_brace.to >= 0) nodes = nodes.slice(_brace.from, _brace.to);
     else if (_brace.from > 0) nodes = nodes.slice(_brace.from);
-    if (!nodes.length) return;
-    App.Draw.brace(stage, nodes, { label: _brace.label, color: "#e65100", w: 3, dur: 800 });
+    var host = $("braceBox");
+    if (!host || !App.Brace) {
+      // 兜底：老式画图层（没有专用括号模块时）
+      var stage = stageEl();
+      if (!stage || !App.Draw || !nodes.length) return;
+      App.Draw.brace(stage, nodes, { label: _brace.label, color: "#e65100", w: 3, dur: 800 });
+      return;
+    }
+    if (!nodes.length) { App.Brace.clear(host); return; }
+    App.Brace.draw(host, {
+      span: nodes, label: _brace.label, color: "#e65100",
+      stroke: 4, depth: 26, dur: 800
+    });
   }
   function reveal(v, label, sayTxt) {
     var ans = $("e-ans"); if (ans) { ans.textContent = v; ans.classList.add("reveal"); }
@@ -370,7 +380,7 @@
         push(520, function () { top(ZH.count(a)); _say(ZH.s2(a)); });
         push(950, function () { top(ZH.count(a) + " " + ZH.plus + " "); });
         for (var s3 = 0; s3 < b; s3++) push(420, (function () { var e = emojiNode(_curEmo, "R", "B"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
-        _brace = { grp: "B", label: b + " 个", from: 0, to: -1 };
+        _brace = { grp: "ALL", label: "？个", from: 0, to: -1 };
         push(520, function () { top(ZH.count(a) + " " + ZH.plus + " " + ZH.count(b)); _say(ZH.s3(b)); });
       }
       push(800, function () { braceShow(); if ($("qlabel")) { $("qlabel").textContent = ZH.q; $("qlabel").className = "q pulse"; } _say(ZH.s5()); });
