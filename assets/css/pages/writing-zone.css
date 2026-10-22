@@ -1,0 +1,34 @@
+/*
+ * writing-zone.css — 页面层 / 写作专区
+ */
+.pic-wrap { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center; margin-bottom: 10px; }
+.pic-img {
+  width: 120px; height: 120px; -webkit-box-flex: 0; -webkit-flex: 0 0 120px; flex: 0 0 120px;
+  background: #fff; border: 2px solid #ffe0b2; border-radius: 18px; padding: 8px;
+  display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; justify-content: center;
+}
+.pic-img svg { width: 96px; height: 96px; }
+.pic-words { margin-left: 14px; font-size: 16px; color: #5d4037; line-height: 1.8; }
+.pw { display: inline-block; background: #fff3e0; border: 2px solid #ffd9a8; border-radius: 12px; padding: 3px 10px; margin: 3px; color: #e65100; font-weight: bold; }
+
+.wt-area {
+  width: 100%; min-height: 90px; font-size: 18px; color: #4a3b2a; line-height: 1.8;
+  border: 2px solid #ffd9a8; border-radius: 14px; padding: 10px 12px; resize: vertical;
+  -webkit-box-sizing: border-box; box-sizing: border-box; background: #fffdf8;
+}
+
+/* 连词成句 */
+.order-pool { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin: 10px 0; }
+.oword {
+  display: inline-block; margin: 4px; padding: 8px 14px; font-size: 20px; color: #5d4037;
+  background: #fff3e0; border: 2px solid #ffd9a8; border-radius: 12px; cursor: pointer;
+}
+.oword.used { opacity: .35; cursor: default; }
+.oword.in { background: #e8f5e9; border-color: #a5d6a7; cursor: default; }
+.order-ans {
+  min-height: 48px; border: 2px dashed #ffbf80; border-radius: 14px; padding: 8px 10px;
+  display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+}
+.order-ans .ph { color: #b0a08a; font-size: 15px; }
+
+.punct-show { font-size: 26px; color: #e65100; font-weight: bold; text-align: center; margin: 14px 0; }

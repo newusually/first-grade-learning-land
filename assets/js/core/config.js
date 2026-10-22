@@ -22,7 +22,8 @@
     counts: {
       problems: 15,
       math: 18,
-      chinese: 16
+      chinese: 16,
+      english: 14
     }
   };
 })(window);

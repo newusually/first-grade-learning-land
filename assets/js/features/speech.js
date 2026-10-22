@@ -7,6 +7,7 @@
   "use strict";
   var App = (w.App = w.App || {});
   var voice = null;
+  var enVoice = null;
 
   function pickVoice() {
     if (!("speechSynthesis" in w)) return;
@@ -16,9 +17,25 @@
                  .filter(function (v) { return /Xiaoxiao|Yunxi|Huihui|Yaoyao|Female|Chinese/.test(v.name); })[0]
              || vs.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf("zh") === 0; })[0]
              || null;
-    } catch (e) { voice = null; }
+      enVoice = vs.filter(function (v) { return v.lang && /^en/i.test(v.lang); })[0] || null;
+    } catch (e) { voice = null; enVoice = null; }
   }
   try { pickVoice(); if (w.speechSynthesis) w.speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
+
+  // 英文朗读（英语专区使用）
+  function speakEn(text, opt) {
+    opt = opt || {};
+    if (!("speechSynthesis" in w) || !text) return;
+    try {
+      w.speechSynthesis.cancel();
+      var u = new w.SpeechSynthesisUtterance(String(text));
+      u.lang = "en-US";
+      if (enVoice) u.voice = enVoice;
+      u.rate = (typeof opt.rate === "number") ? opt.rate : 0.85;
+      u.pitch = (typeof opt.pitch === "number") ? opt.pitch : 1.0;
+      w.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
 
   function speak(text, opt) {
     opt = opt || {};
@@ -71,5 +88,5 @@
     wrong: function () { tone(220, 0.25, "square", 0.08); }
   };
 
-  App.Speech = { speak: speak, sfx: sfx, pickVoice: pickVoice };
+  App.Speech = { speak: speak, speakEn: speakEn, sfx: sfx, pickVoice: pickVoice };
 })(window);

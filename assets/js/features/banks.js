@@ -11,10 +11,11 @@
   "use strict";
   var App = (w.App = w.App || {});
   var U = App.U;
-  var TYPES = ["problems", "math", "chinese"];
+  var TYPES = ["problems", "math", "chinese", "pinyin", "english"];
 
   // 内置源（注册时由内容模块传入）与 外部源（manifest 加载）
-  var pools = { problems: [], math: [], chinese: [] };
+  var pools = {};
+  TYPES.forEach(function (t) { pools[t] = []; });
 
   /* ---------- 薄弱知识点（localStorage 持久化，失败退回内存） ---------- */
   var weak = {};
@@ -36,6 +37,7 @@
   // source: { questions:[...] } 或 { gens:[{ gen:fn, weight:Number }] } 或单个 gen 函数
   function register(type, source) {
     if (TYPES.indexOf(type) < 0) return;
+    if (!pools[type]) pools[type] = [];
     if (typeof source === "function") pools[type].push({ gens: [{ gen: source, weight: 1 }] });
     else if (source && source.gens) pools[type].push(source);
     else if (source && source.questions) pools[type].push(source);

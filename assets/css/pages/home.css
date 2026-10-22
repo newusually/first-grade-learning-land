@@ -42,6 +42,10 @@
 .entry-card.c5 { background: -webkit-linear-gradient(160deg, #ff8a80, #e53935); background: linear-gradient(160deg, #ff8a80, #e53935); }
 .entry-card.c6 { background: -webkit-linear-gradient(160deg, #fff59d, #f9a825); background: linear-gradient(160deg, #fff59d, #f9a825); color: #6d4c00; }
 .entry-card.c7 { background: -webkit-linear-gradient(160deg, #4db6ac, #00796b); background: linear-gradient(160deg, #4db6ac, #00796b); }
+.entry-card.c8 { background: -webkit-linear-gradient(160deg, #b39ddb, #5e35b1); background: linear-gradient(160deg, #b39ddb, #5e35b1); }
+.entry-card.c9 { background: -webkit-linear-gradient(160deg, #80cbc4, #00897b); background: linear-gradient(160deg, #80cbc4, #00897b); }
+.entry-card.c10 { background: -webkit-linear-gradient(160deg, #90caf9, #1565c0); background: linear-gradient(160deg, #90caf9, #1565c0); }
+.entry-card.c11 { background: -webkit-linear-gradient(160deg, #ffb74d, #e8890c); background: linear-gradient(160deg, #ffb74d, #e8890c); }
 
 .home-tools { text-align: center; margin-top: 8px; }
 .home-tools .btn { margin: 4px; }

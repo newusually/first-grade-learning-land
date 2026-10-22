@@ -1,0 +1,72 @@
+/*
+ * english-zone.css — 页面层 / 英语专区
+ */
+.ez-intro { font-size: 16px; color: #5d4037; margin-bottom: 10px; line-height: 1.7; }
+.ez-intro b { color: #1565c0; }
+
+/* 字母卡 */
+.letter-wrap { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center; }
+.letter-card {
+  width: 92px; margin: 6px; padding: 8px 4px; text-align: center; background: #fff;
+  border: 2px solid #aed6f1; border-radius: 16px; cursor: pointer;
+  -webkit-transition: -webkit-transform .12s; transition: transform .12s;
+}
+.letter-card:hover { -webkit-transform: translateY(-3px); transform: translateY(-3px); }
+.lc-up { font-size: 38px; font-weight: bold; color: #1565c0; line-height: 1; }
+.lc-low { font-size: 18px; color: #5d4037; }
+.lc-img { width: 56px; height: 56px; margin: 4px auto; }
+.lc-img svg { width: 56px; height: 56px; }
+.lc-noimg { font-size: 14px; color: #888; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center; -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center; }
+.lc-word { font-size: 13px; color: #5d4037; }
+
+/* 单词卡 */
+.vocab-wrap { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center; }
+.vocab-card {
+  width: 96px; margin: 6px; padding: 8px 4px; text-align: center; background: #fff;
+  border: 2px solid #aed6f1; border-radius: 16px; cursor: pointer;
+}
+.vc-img { width: 60px; height: 60px; margin: 0 auto; }
+.vc-img svg { width: 60px; height: 60px; }
+.vc-noimg { font-size: 15px; color: #1565c0; font-weight: bold; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center; -webkit-box-pack: center; -webkit-justify-content: center; justify-content: center; }
+.vc-en { font-size: 16px; color: #1565c0; font-weight: bold; margin-top: 2px; }
+.vc-zh { font-size: 13px; color: #9b8a72; }
+
+/* 组词 / 句子 共用词块（同 writing-zone） */
+.order-pool { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin: 10px 0; }
+.oword {
+  display: inline-block; margin: 4px; padding: 8px 14px; font-size: 20px; color: #5d4037;
+  background: #eaf4fb; border: 2px solid #aed6f1; border-radius: 12px; cursor: pointer;
+}
+.oword.used { opacity: .35; cursor: default; }
+.oword.in { background: #e8f5e9; border-color: #a5d6a7; cursor: default; }
+.order-ans {
+  min-height: 48px; border: 2px dashed #7fb3d5; border-radius: 14px; padding: 8px 10px;
+  display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+}
+.order-ans .ph { color: #9bb4c4; font-size: 15px; }
+.cvc-show { text-align: center; margin: 10px 0; }
+.cvc-show svg { width: 90px; height: 90px; }
+.cvc-hint { font-size: 18px; color: #1565c0; }
+
+/* 完形填空 */
+.cloze-show { font-size: 24px; color: #1565c0; font-weight: bold; text-align: center; margin: 14px 0; line-height: 1.6; }
+.blank { color: #e65100; }
+
+/* 听力大按钮 */
+.bigbtn {
+  display: inline-block; margin: 8px; padding: 14px 28px; font-size: 22px; color: #fff;
+  background: -webkit-linear-gradient(#42a5f5, #1e88e5); background: linear-gradient(#42a5f5, #1e88e5);
+  border: none; border-radius: 40px; cursor: pointer; -webkit-box-shadow: 0 4px 0 #1565c0; box-shadow: 0 4px 0 #1565c0;
+}
+
+/* 背诵 */
+.recite-list { margin-top: 6px; }
+.recite-card { background: #fff; border: 2px solid #aed6f1; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+.rc-title { font-size: 17px; color: #1565c0; font-weight: bold; }
+.rc-text { font-size: 17px; color: #4a3b2a; line-height: 1.9; margin: 6px 0; }
+
+/* 记忆妙招 */
+.tips-wrap { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; }
+.tip-card { -webkit-box-flex: 1; -webkit-flex: 1 1 220px; flex: 1 1 220px; margin: 6px; background: #eef7ff; border: 2px solid #aed6f1; border-radius: 14px; padding: 10px 12px; }
+.tip-t { font-size: 16px; color: #1565c0; font-weight: bold; margin-bottom: 4px; }
+.tip-d { font-size: 14px; color: #5d4037; line-height: 1.6; }
