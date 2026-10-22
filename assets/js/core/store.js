@@ -7,7 +7,10 @@
   "use strict";
   var App = (w.App = w.App || {});
   var KEY = "yg.learn.v1";
-  var def = { autoRead: true, stars: 0, badges: [], learned: {}, visits: 0, lastVisit: "", voiceZh: "", voiceEn: "", voiceCloud: "", voiceStyle: "" };
+  // 中文默认嗓音：Microsoft HsiaoChen Online (Natural) - Chinese (Taiwan)
+  // （设备上没有这个嗓音时，speech.js 会自动回退到同类型的在线嗓音/本机嗓音）
+  var DEFAULT_VOICE_ZH = "Microsoft HsiaoChen Online (Natural) - Chinese (Taiwan)";
+  var def = { autoRead: true, stars: 0, badges: [], learned: {}, visits: 0, lastVisit: "", voiceZh: DEFAULT_VOICE_ZH, voiceEn: "", voiceCloud: "", voiceStyle: "" };
 
   function read() {
     try {

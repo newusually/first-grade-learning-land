@@ -83,25 +83,57 @@
 
   function stopAll(els) {
     if (timer) { clearTimeout(timer); timer = null; }
-    queue = []; playing = false; paused = false;
+    queue = []; playing = false; paused = false; speechUntil = 0; hold = 0;
+    if (App.Speech && App.Speech.stop) { try { App.Speech.stop(); } catch (e0) {} }
     if (els && els.playBtn) { els.playBtn.disabled = false; }
     if (els && els.tPlay) { els.tPlay.textContent = ZH.play; }
     if (els && els.say) { els.say.textContent = ""; }
     if (els && els.steps) { els.steps.textContent = ""; }
     try { if ("speechSynthesis" in w) w.speechSynthesis.cancel(); } catch (e) {}
   }
-  function _say(t) { if (curVoice && App.Speech) App.Speech.speak(t); }
+  // 动画快慢同步到语速：动画越快话也说得快一点，避免"嘴跟不上"
+  function speechRate() {
+    var f = curSpeed ? 1 / curSpeed : 1;
+    if (f < 0.85) f = 0.85;
+    if (f > 1.5) f = 1.5;
+    var st = (App.Speech && App.Speech.currentStyle) ? App.Speech.currentStyle() : null;
+    var base = st ? st.rate : 0.95;
+    return Math.round(base * f * 100) / 100;
+  }
+  // 记下"这句话大概说到什么时候"：动画据此把下一步排在话音落完之后，不再被下一句掐断
+  var speechUntil = 0;
+  function tick() { return (w.performance && w.performance.now) ? w.performance.now() : (new Date()).getTime(); }
+  function _say(t) {
+    if (!curVoice || !App.Speech) return;
+    var r = speechRate();
+    App.Speech.speak(t, { rate: r });
+    var est = App.Speech.estimate ? App.Speech.estimate(t, { rate: r }) : 0;
+    speechUntil = est ? (tick() + est) : 0;
+  }
   function _pop() { if (curSfx && App.Speech) App.Speech.sfx.pop(); }
   function _off() { if (curSfx && App.Speech) App.Speech.sfx.off(); }
   function _chime() { if (curSfx && App.Speech) App.Speech.sfx.right(); }
 
+  // 兜底：引擎真的还在念就不要抢（估算会随实测校准，但在线嗓音快慢差别大，这里查真实状态）
+  var hold = 0;
+  function stillSpeaking() {
+    if (!curVoice) return false;
+    try { return !!(w.speechSynthesis && w.speechSynthesis.speaking); } catch (e) { return false; }
+  }
   function runStep() {
     if (paused || !queue.length) {
       if (!queue.length) { playing = false; if (globalEls && globalEls.playBtn) globalEls.playBtn.disabled = false; if (globalEls && globalEls.tPlay) globalEls.tPlay.textContent = ZH.play; }
       return;
     }
-    var st = queue.shift(); st.fn();
-    timer = setTimeout(runStep, st.delay * curSpeed);
+    if (stillSpeaking() && hold < 45) { hold++; timer = setTimeout(runStep, 150); return; }
+    hold = 0;
+    var st = queue.shift();
+    st.fn();
+    var wait = st.delay * curSpeed;
+    // 还有话没说完：等到说完再走下一步（+0.3 秒换气），动画不再跑到话前面去
+    var left = speechUntil ? (speechUntil - tick()) : 0;
+    if (left > 0) wait = Math.max(wait, left + 300);
+    timer = setTimeout(runStep, wait);
   }
   var globalEls = null;
 

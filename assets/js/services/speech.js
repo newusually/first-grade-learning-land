@@ -24,16 +24,54 @@
       return (w.speechSynthesis.getVoices() || []).filter(function (v) { return v.lang && /^en/i.test(v.lang); });
     } catch (e) { return []; }
   }
+  // 默认嗓音：优先 Microsoft HsiaoChen Online (Natural) - Chinese (Taiwan)，没有就依次回退
+  var ZH_DEFAULT = [
+    "Microsoft HsiaoChen Online (Natural) - Chinese (Taiwan)",
+    "Microsoft HsiaoChen Online (Natural) - Chinese (Hong Kong)",
+    "Microsoft HsiaoChen Online (Natural) - Chinese (Taiwan Mandarin)",
+    "Microsoft Yunxi Online (Natural) - Chinese (Mainland)",
+    "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)"
+  ];
+  var ZH_DEFAULT_RE = [
+    /HsiaoChen.*Chinese \(Taiwan\)/i, /HsiaoChen.*Taiwan/i, /HsiaoChen/i,
+    /Yunxi.*Chinese \(Mainland\)/i, /Xiaoxiao.*Chinese \(Mainland\)/i
+  ];
   // 中文嗓音偏好：微软小晓/云希等童声/青年声优先（适合小朋友）
   var ZH_FAVOR = /Xiaoxiao|Yunxi|Xiaoyi|Yunjian|Yaoyao|Tingting|Huihui|Xiaomeng|Female|Sinji|Meijia/i;
+  function byName(list, name) {
+    for (var i = 0; i < list.length; i++) { if (list[i].name === name) return list[i]; }
+    return null;
+  }
+  // 按默认清单挑一个（用户没手动选过声音时才用）
+  function defaultZh(zs) {
+    var i, j, v;
+    for (i = 0; i < ZH_DEFAULT.length; i++) { v = byName(zs, ZH_DEFAULT[i]); if (v) return v; }
+    for (j = 0; j < ZH_DEFAULT_RE.length; j++) {
+      for (i = 0; i < zs.length; i++) { if (ZH_DEFAULT_RE[j].test(zs[i].name || "")) return zs[i]; }
+    }
+    return null;
+  }
   function pickVoice() {
     if (!("speechSynthesis" in w)) return;
     var want = (App.Store && App.Store.state && App.Store.state.voiceZh) || "";
     try {
       var zs = zhList();
       var fav = zs.filter(function (v) { return ZH_FAVOR.test(v.name); })[0] || null;
-      if (want) { voice = zs.filter(function (v) { return v.name === want; })[0] || fav || zs[0] || null; }
-      else { voice = fav || zs[0] || null; }
+      var hit = want ? byName(zs, want) : null;
+      if (want && hit) { voice = hit; }
+      else if (want) {
+        // 保存的嗓音这台设备没有（或就是默认嗓音没装）：回退，并把真实嗓音写回 Store
+        voice = defaultZh(zs) || fav || zs[0] || null;
+        if (voice && want === ZH_DEFAULT[0] && App.Store && App.Store.state) {
+          try { App.Store.state.voiceZh = voice.name; App.Store.save(); } catch (e1) {}
+        }
+      } else {
+        // 没手动选过：用默认嗓音（HsiaoChen 优先），并写回 Store 让面板显示它
+        voice = defaultZh(zs) || fav || zs[0] || null;
+        if (voice && App.Store && App.Store.state) {
+          try { App.Store.state.voiceZh = voice.name; App.Store.save(); } catch (e1) {}
+        }
+      }
       var es = enList();
       var wantEn = (App.Store && App.Store.state && App.Store.state.voiceEn) || "";
       enVoice = wantEn ? (es.filter(function (v) { return v.name === wantEn; })[0] || es[0] || null) : (es[0] || null);
@@ -164,7 +202,8 @@
       if (a === cloudCur) cloudCur = null;
       cloudNext();
     }
-    a.onended = function () { fin(false); };
+    var t0 = nowMs();
+    a.onended = function () { calibrate(job.t, nowMs() - t0, 1, isEnText(job.t)); fin(false); };
     a.onerror = function () { fin(true); };
     try { a.src = cloudUrl(job.v, job.t); var p = a.play(); if (p && p.catch) p.catch(function () { fin(true); }); } catch (e) { fin(true); }
     // 兜底：5 秒还没结束就跳过（网络卡住）
@@ -344,6 +383,45 @@
     speak(out.join(" "), opt); // 语速交给"声音风格"接管（默认偏慢，适合教学）
   }
 
+  /* ---------- 朗读时长估算（给动画配节奏用） ----------
+   * 初始值：中文约 5 字/秒、英文约 13 词/秒（rate=1 时）；每次真读完用实测值校准，
+   * 这样在线嗓音慢、本机嗓音快都能自动对上，不用写死。 */
+  var CPS = { zh: 5.0, en: 13.0 };
+  function nowMs() { return (w.performance && w.performance.now) ? w.performance.now() : (new Date()).getTime(); }
+  function plainText(t) { return String(t == null ? "" : t).replace(/<[^>]+>/g, ""); }
+  function isEnText(s) { return !/[\u4e00-\u9fa5]/.test(s); }
+  function currentRate(opt) {
+    var st1 = currentStyle();
+    if (opt && typeof opt.rate === "number" && opt.rate > 0) return opt.rate;
+    return st1 ? st1.rate : 0.95;
+  }
+  // 用实测时长反推字速（归一化到 rate=1），滚动平均
+  function calibrate(text, durMs, rate, en) {
+    var s = plainText(text).replace(/\s/g, "");
+    var len = en ? (plainText(text).split(/\s+/).length || 1) : s.length;
+    if (!len || durMs < 350) return;
+    var eff = Math.max(140, durMs - 260);          // 扣掉起播延迟
+    var cps = (len / (eff / 1000)) * (rate || 1);
+    if (cps < 2) cps = 2;
+    if (cps > 14) cps = 14;
+    var k = en ? "en" : "zh";
+    CPS[k] = Math.round((CPS[k] * 0.65 + cps * 0.35) * 100) / 100;
+  }
+  // 估算这段话读完要多少毫秒（动画据此决定下一步等多久）
+  function estimate(text, opt) {
+    opt = opt || {};
+    var s = plainText(text).trim();
+    if (!s) return 0;
+    var en = isEnText(s);
+    var rate = currentRate(opt);
+    var len = en ? (s.split(/\s+/).length || 1) : s.replace(/\s/g, "").length;
+    var pauses = (s.match(/[，。！？；、：,.!?;:]/g) || []).length;
+    var ms = (len / (CPS[en ? "en" : "zh"] * rate)) * 1000 + pauses * 140 + 260;
+    var cv = currentCloud();
+    if (cv && cv.tl !== "en") ms += 600;            // 云端要下载音频，多留一点
+    return Math.round(ms);
+  }
+
   function speak(text, opt) {
     opt = opt || {};
     if (!("speechSynthesis" in w) || !text) return;
@@ -368,6 +446,10 @@
       var st1 = currentStyle();
       u.rate = (typeof opt.rate === "number") ? opt.rate : (st1 ? st1.rate : 0.95);
       u.pitch = (typeof opt.pitch === "number") ? opt.pitch : (st1 ? st1.pitch : 1.15);
+      // 读完记下真实时长 → 校准估算（下次更准）
+      var t0 = nowMs(), plain = String(text);
+      u.onend = function () { calibrate(plain, nowMs() - t0, u.rate, false); };
+      u.onerror = function () {};
       w.speechSynthesis.speak(u);
     } catch (e) {}
   }
@@ -482,6 +564,8 @@
   App.Speech = {
     stop: stopAll,
     speak: speak,
+    estimate: estimate,
+    cps: function () { return { zh: CPS.zh, en: CPS.en }; },
     speakLocal: speakLocal,
     speakEn: speakEn,
     speakEnLocal: speakEnLocal,
