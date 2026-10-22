@@ -11,21 +11,79 @@
   var App = (w.App = w.App || {});
   var voice = null, enVoice = null;
   var pendZh = [], pendEn = [], flushing = false;
+  var PYD = App.PY_SYL || { SYL: {}, NEU: {} };
+  var PYSYL = PYD.SYL || {}, PYNEU = PYD.NEU || {};
 
+  function zhList() {
+    try {
+      return (w.speechSynthesis.getVoices() || []).filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf("zh") === 0; });
+    } catch (e) { return []; }
+  }
+  function enList() {
+    try {
+      return (w.speechSynthesis.getVoices() || []).filter(function (v) { return v.lang && /^en/i.test(v.lang); });
+    } catch (e) { return []; }
+  }
+  // 中文嗓音偏好：微软小晓/云希等童声/青年声优先（适合小朋友）
+  var ZH_FAVOR = /Xiaoxiao|Yunxi|Xiaoyi|Yunjian|Yaoyao|Tingting|Huihui|Xiaomeng|Female|Sinji|Meijia/i;
   function pickVoice() {
     if (!("speechSynthesis" in w)) return;
+    var want = (App.Store && App.Store.state && App.Store.state.voiceZh) || "";
     try {
-      var vs = w.speechSynthesis.getVoices() || [];
-      voice = vs.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf("zh") === 0; })
-                 .filter(function (v) { return /Xiaoxiao|Yunxi|Huihui|Yaoyao|Female|Chinese|Ting|Sinji/.test(v.name); })[0]
-             || vs.filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf("zh") === 0; })[0]
-             || null;
-      enVoice = vs.filter(function (v) { return v.lang && /^en/i.test(v.lang); })[0] || null;
+      var zs = zhList();
+      var fav = zs.filter(function (v) { return ZH_FAVOR.test(v.name); })[0] || null;
+      if (want) { voice = zs.filter(function (v) { return v.name === want; })[0] || fav || zs[0] || null; }
+      else { voice = fav || zs[0] || null; }
+      var es = enList();
+      var wantEn = (App.Store && App.Store.state && App.Store.state.voiceEn) || "";
+      enVoice = wantEn ? (es.filter(function (v) { return v.name === wantEn; })[0] || es[0] || null) : (es[0] || null);
     } catch (e) { voice = null; enVoice = null; }
     if (voice && pendZh.length) flush("zh");
     if (enVoice && pendEn.length) flush("en");
   }
   try { pickVoice(); if (w.speechSynthesis) w.speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {}
+
+  /* ---------- 声音选择（像导航一样挑人声） ---------- */
+  var VNAME = [
+    [/Xiaoxiao/i, "晓晓 · 女声"], [/Xiaoyi/i, "晓伊 · 女声"], [/Xiaomeng/i, "晓梦 · 女声"], [/Xiaohan/i, "晓涵 · 女声"],
+    [/Xiaomo/i, "晓墨 · 女声"], [/Xiaoxuan/i, "晓萱 · 女声"], [/Xiaoyue/i, "晓月 · 女声"], [/Xiaobei/i, "小贝 · 女声"],
+    [/Yunxi/i, "云希 · 男声"], [/Yunjian/i, "云健 · 男声"], [/Yunxia/i, "云夏 · 男声"], [/Yunyang/i, "云扬 · 男声"],
+    [/Yunze/i, "云泽 · 男声"], [/Huihui/i, "慧慧 · 女声"], [/Yaoyao/i, "瑶瑶 · 女声"], [/Tingting/i, "婷婷 · 女声"],
+    [/Sinji/i, "新姬 · 女声"], [/Meijia/i, "美佳 · 女声"], [/Lili/i, "莉莉 · 女声"],
+    [/Google.*(中国|Chinese|Mandarin|普通话)/i, "谷歌普通话 · 女声"], [/普通话/i, "普通话 · 女声"],
+    [/female/i, "女声"], [/male/i, "男声"]
+  ];
+  function voiceLabel(v) {
+    var i, t;
+    for (i = 0; i < VNAME.length; i++) { if (VNAME[i][0].test(v.name || "")) return VNAME[i][1]; }
+    t = (v.lang || "").toLowerCase().indexOf("zh") === 0 ? "中文语音" : "英文语音";
+    return (v.name || "未知语音") + " · " + t;
+  }
+  function listVoices() {
+    var out = [], i, v;
+    var zs = zhList(), es = enList();
+    for (i = 0; i < zs.length; i++) { v = zs[i]; out.push({ name: v.name, lang: v.lang, kind: "zh", label: voiceLabel(v) }); }
+    for (i = 0; i < es.length; i++) { v = es[i]; out.push({ name: v.name, lang: v.lang, kind: "en", label: voiceLabel(v) }); }
+    return out;
+  }
+  function setVoice(name, kind) {
+    if (!App.Store || !App.Store.state) return;
+    if (kind === "en") App.Store.state.voiceEn = name || ""; else App.Store.state.voiceZh = name || "";
+    App.Store.save();
+    pickVoice();
+  }
+  function demoVoice(name, kind) {
+    if (!("speechSynthesis" in w)) return;
+    try {
+      var vs = (kind === "en" ? enList() : zhList()).filter(function (v) { return v.name === name; })[0];
+      w.speechSynthesis.cancel();
+      var u = new w.SpeechSynthesisUtterance(kind === "en" ? "Hello! I am your English voice." : "你好，我是你的朗读小老师，我们一起来学拼音吧！");
+      u.lang = kind === "en" ? "en-US" : "zh-CN";
+      if (vs) u.voice = vs;
+      u.rate = 0.9;
+      w.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
 
   function speakEn(text, opt) {
     opt = opt || {};
@@ -43,18 +101,30 @@
     } catch (e) {}
   }
 
-  /* ---------- 拼音朗读：按中文呼读音读，绝不被读成英文字母 ---------- */
+  /* ---------- 拼音朗读：按中文自然语言读，绝不被读成英文字母 ---------- */
   var PY_INIT = { b: "波", p: "坡", m: "摸", f: "佛", d: "得", t: "特", n: "呢", l: "勒", g: "哥", k: "科", h: "喝", j: "鸡", q: "七", x: "西", zh: "知", ch: "吃", sh: "诗", z: "资", c: "刺", s: "思", r: "日", y: "衣", w: "乌" };
-  var PY_WHOLE = { zhi: "知", chi: "吃", shi: "诗", ri: "日", zi: "资", ci: "刺", si: "思", yi: "衣", wu: "乌", yu: "迂", ye: "耶", yue: "月", yuan: "元", yin: "音", yun: "云", ying: "英" };
+  var PY_WHOLE = { zhi: "知", chi: "吃", shi: "诗", ri: "日", zi: "资", ci: "刺", si: "思", yi: "衣", wu: "乌", yu: "迂", ye: "耶", yue: "月", yuan: "元", yin: "音", yun: "云", ying: "英", zhei: "这", shei: "谁" };
   var PY_FIN = {
     a: "啊", o: "喔", e: "鹅", i: "衣", u: "乌", "ü": "迂", ai: "爱", ei: "欸", ui: "威", ao: "熬", ou: "欧", iu: "优",
     ie: "耶", "üe": "约", ue: "约", er: "儿", an: "安", en: "恩", in: "音", un: "温", "ün": "晕", ang: "昂", eng: "鞥", ing: "英", ong: "翁",
     ia: "呀", iao: "腰", ian: "烟", iang: "央", iong: "拥", ua: "蛙", uo: "窝", uai: "外", uan: "弯", uang: "汪", ueng: "翁"
   };
+  var PY_EXTRA = { ng: "嗯", hm: "噷", hng: "嗯", "ê": "欸", yo: "哟", o: "喔" };
   // 声母表（长的放前面，保证 zh/ch/sh 优先匹配）
   var PY_INIT_KEYS = ["zh", "ch", "sh", "b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h", "j", "q", "x", "z", "c", "s", "r", "y", "w"];
   // 声调符号 → 无声调字母
   var PY_TONE = { "ā": "a", "á": "a", "ǎ": "a", "à": "a", "ē": "e", "é": "e", "ě": "e", "è": "e", "ī": "i", "í": "i", "ǐ": "i", "ì": "i", "ō": "o", "ó": "o", "ǒ": "o", "ò": "o", "ū": "u", "ú": "u", "ǔ": "u", "ù": "u", "ǖ": "ü", "ǘ": "ü", "ǚ": "ü", "ǜ": "ü", "ń": "n", "ň": "n", "ḿ": "m" };
+  var TONE_ORDER = "āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜńň";
+  // 取声调：带调符号或数字（ma3）→ 1~4；无声调 → 0
+  function pyTone(tok) {
+    var i, ch, s = String(tok);
+    for (i = 0; i < s.length; i++) {
+      ch = s.charAt(i);
+      if (PY_TONE[ch]) { return TONE_ORDER.indexOf(ch) % 4 + 1; }
+    }
+    var m = s.match(/([1-4])\s*$/);
+    return m ? parseInt(m[1], 10) : 0;
+  }
   function pyNorm(t) {
     var s = String(t).toLowerCase().replace(/[0-9]/g, "").replace(/u:/g, "ü"), out = "", i, ch;
     for (i = 0; i < s.length; i++) {
@@ -65,7 +135,14 @@
     }
     return out;
   }
-  // 把一个无声调音节拆成「声母呼读音 + 韵母汉字」，如 ma -> 摸 啊；zhuang -> 知 汪
+  // 完整音节 → 同音汉字（带调用对应声调的字；无声调用轻声代表字，没有则用一声字）
+  function sylChar(low, tone) {
+    var four = PYSYL[low];
+    if (!four) return null;
+    if (tone >= 1 && tone <= 4) return four.charAt(tone - 1);
+    return PYNEU[low] || four.charAt(0);
+  }
+  // 把一个无声调音节拆成「声母呼读音 + 韵母汉字」（保底：表里没有的生僻音节）
   function pySyllable(low) {
     var i, init = "", fin, a, b;
     for (i = 0; i < PY_INIT_KEYS.length; i++) {
@@ -82,20 +159,30 @@
   function speakPinyin(py, opt) {
     py = String(py || "").trim();
     if (!py) return;
-    var tokens = py.split(/[\s,，、]+/), out = [], i, t, low, c, piece;
+    var tokens = py.split(/[\s,，、]+/), out = [], i, t, low, c, tone, piece;
     for (i = 0; i < tokens.length; i++) {
       t = tokens[i]; if (!t) continue;
+      tone = pyTone(t);
       low = pyNorm(t);
       if (!low) continue;
-      if (PY_INIT[low]) { out.push(PY_INIT[low]); continue; }
-      if (PY_WHOLE[low]) { out.push(PY_WHOLE[low]); continue; }
-      if (PY_FIN[low]) { out.push(PY_FIN[low]); continue; }
+      if (PY_EXTRA[low]) { out.push(PY_EXTRA[low]); continue; }
+      if (tone) {                                   // 带声调：一定是完整音节 → 读同音汉字
+        piece = sylChar(low, tone);
+        if (piece) { out.push(piece); continue; }
+      }
+      if (PY_INIT[low]) { out.push(PY_INIT[low]); continue; }   // 声母：呼读音 b→波
+      if (PY_WHOLE[low]) { out.push(PY_WHOLE[low]); continue; } // 整体认读：yi→衣
+      if (PY_FIN[low]) { out.push(PY_FIN[low]); continue; }     // 韵母：ang→昂
+      if (!tone) {                                  // 无声调完整音节：ma→妈、ba→爸
+        piece = sylChar(low, 0);
+        if (piece) { out.push(piece); continue; }
+      }
       if (/^[bpmfdtnlgkhjqxzcsryw]+$/.test(low) && low.length > 1) { // 无声母字母串，如 bpm
         var cs = low.split("");
         for (c = 0; c < cs.length; c++) { if (PY_INIT[cs[c]]) out.push(PY_INIT[cs[c]]); }
         continue;
       }
-      piece = pySyllable(low);           // 普通音节（可带调）：ma -> 摸 啊；hǎo -> 喝 奥
+      piece = pySyllable(low);                      // 保底拆分
       if (piece) { out.push(piece); continue; }
       if (/^[\u4e00-\u9fa5]/.test(t)) { out.push(t); continue; }  // 汉字原样
       if (/^[bpmfdtnlgkhjqxzcsryw]+$/.test(low)) {                // 认不出的一串字母：按声母逐个读，绝不读英文
@@ -216,6 +303,9 @@
     autoRead: autoRead,
     flushAll: flushAll,
     pickVoice: pickVoice,
+    listVoices: listVoices,
+    setVoice: setVoice,
+    demoVoice: demoVoice,
     sfx: sfx
   };
 })(window);

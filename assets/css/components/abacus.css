@@ -54,7 +54,6 @@
 @keyframes popInR { 0% { -webkit-transform: translateX(20px) scale(0); transform: translateX(20px) scale(0); } 80% { -webkit-transform: scale(1.15); transform: scale(1.15); } 100% { -webkit-transform: scale(1); transform: scale(1); } }
 
 /* 大括号路径（画在 row 下方） */
-#braceWrap { text-align: center; margin: -6px 0 4px; }
 #bracePath { stroke: #ffb74d; stroke-width: 4; fill: none; }
 
 /* 题目标签 “？个” */
@@ -144,3 +143,21 @@
 
 /* 速度选择 */
 .speedsel { margin-left: 8px; padding: 4px 6px; font-size: 14px; border: 2px solid #ffd9a8; border-radius: 10px; }
+
+/* 画图小工具（开源库：SVG.js / Rough.js / anime.js） */
+.gd-panel { margin-top: 14px; }
+.gd-head { font-size: 17px; font-weight: bold; color: #e65100; margin-bottom: 10px; }
+.gd-head .gd-sub { font-size: 12px; font-weight: normal; color: #9b8a72; margin-left: 8px; }
+.gd-tools { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; }
+.gd-btn {
+  margin: 0 8px 8px 0; padding: 8px 14px; font-size: 14px; cursor: pointer;
+  background: #fffdf7; border: 2px solid #ffd9a8; border-radius: 999px; color: #8d5524;
+  -webkit-transition: background .15s, color .15s; transition: background .15s, color .15s;
+}
+.gd-btn.on { background: #ff7043; border-color: #ff7043; color: #fff; }
+.gd-stage {
+  height: 220px; background: #fffdf7;
+  border: 2px dashed #ffcc80; border-radius: 14px;
+}
+.gd-tip { margin-top: 8px; font-size: 13px; color: #5d4037; line-height: 1.7; }
+.gd-fallback { padding: 20px; color: #9b8a72; font-size: 13px; }

@@ -21,7 +21,6 @@
       '<span class="lv" v-for="l in [1,2,3]" :key="l" :class="{on: lv === l}" @click="restart(l)">难度 {{l}}</span>',
       '</div>',
       '<div class="scorebar"><span class="score">⭐ 得分 {{score}}</span>',
-      '<button class="btn spk" @click="readQ">🔊 读题</button></div>',
       '<div class="card" id="card" :class="{shake: shaking}">',
       '<div class="qno" id="qno">第 {{idx+1}} 题</div>',
       '<div class="qtext" id="qtext" v-html="hl(q.text)"></div>',
@@ -71,7 +70,6 @@
     methods: {
       svg: function (id) { return IMG.svg(id) || "⭐"; },
       hl: function (t) { return U.hlNums(t || ""); },
-      readQ: function () { if (this.q) Speech.speak(this.q.text); },
       restart: function (lv) {
         this.lv = lv || this.lv; this.score = 0; this.idx = 0; this.done = false;
         this.quiz = Banks.draw("problems", App.config.counts.problems || 15);
@@ -164,7 +162,7 @@
           this.shaking = true; var self = this;
           setTimeout(function () { self.shaking = false; }, 500);
           Speech.speak(U.pick(CHEER));
-          this.vd = "✘ 正确答案：" + q.ans; this.vdCls = "verdict bad";
+          this.vd = "✘ 正确答案：" + U.ansText(q); this.vdCls = "verdict bad";
           if (q.teach) this.teach = q.teach;
           Banks.record(q.kp, false);
         }

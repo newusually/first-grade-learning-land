@@ -54,7 +54,7 @@
       '<div class="textlist">',
       '<div class="textitem" v-for="(t, i) in texts" :key="i">',
       '<div class="ttitle" @click="t.open = !t.open">{{t.title}}</div>',
-      '<div class="tbody" v-show="t.open">{{t.body}}<div class="hint">{{t.tip}}</div>',
+      '<div class="tbody" v-show="t.open"><span v-html="bodyHtml(t)"></span><div class="hint">{{t.tip}}</div>',
       '<button class="btn spk" @click="say(t.body)">🔊 跟读/背诵</button></div>',
       '</div></div>',
       '<div class="ctr"><button class="btn spk" @click="readAllText">🔊 按顺序读所有课文</button></div>',
@@ -85,6 +85,7 @@
     },
     methods: {
       svg: function (id) { return IMG.svg(id) || "⭐"; },
+      bodyHtml: function (t) { return App.NLP ? App.NLP.annotate(t.body) : t.body; },
       say: function (t) { Speech.speak(t); },
       readPy: function (s) { Speech.speakPinyin(s, { rate: 0.7 }); },
       readAllPy: function () {

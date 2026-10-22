@@ -101,7 +101,8 @@
   ];
   function listenQuiz() {
     var t = U.pick(LISTEN);
-    return { say: t.say, opts: U.shuffled(t.opts), ans: t.opts.indexOf(t.opts[0]) };
+    var opts = U.shuffled(t.opts);           // 先洗牌
+    return { say: t.say, opts: opts, ans: opts.indexOf(t.opts[0]) };  // ans 必须按洗牌后的位置算
   }
 
   // 背诵（英文儿歌 / chant）
@@ -122,6 +123,41 @@
     { t: "✍️ 边写边记", d: "手写单词三遍，眼睛看、手在写、嘴在念，三重记忆。" }
   ];
 
+  // 阅读理解：从 data/english/reading.js 抽一篇一个问题
+  function readingQuiz() {
+    var rd = App.DATA && App.DATA.english && App.DATA.english.reading;
+    if (!rd || !rd.pages) return null;
+    var it = U.pick(U.pick(rd.pages).items);
+    var q = U.pick(it.qs);
+    var opts = U.shuffled(q.opts.slice());
+    return {
+      type: "reading", title: it.t, passage: it.passage, cn: it.cn || "",
+      q: q.q, opts: opts, ans: opts.indexOf(q.opts[q.ans]), why: q.why, kp: "阅读理解"
+    };
+  }
+
+  // 自然拼读：判断字母/组合的发音
+  function phonicsQuiz() {
+    var ph = App.DATA && App.DATA.english && App.DATA.english.phonics;
+    if (!ph || !ph.pages) return null;
+    var pages = ph.pages.filter(function (p) { return p.id !== "ph6" && p.id !== "ph7"; });
+    var it = U.pick(U.pick(pages).items);
+    if (!it.w || !it.w.length || !it.s) return null;
+    var snd = it.s.split("；")[0].split(" ")[0];
+    var all = [];
+    pages.forEach(function (p) {
+      p.items.forEach(function (x) {
+        if (x.s) all.push(x.s.split("；")[0].split(" ")[0]);
+      });
+    });
+    var others = U.shuffled(all.filter(function (x) { return x !== snd; })).slice(0, 2);
+    var opts = U.shuffled([snd].concat(others));
+    return {
+      type: "phonics", q: "“" + it.t + "”发什么音？（例词：" + U.pick(it.w) + "）",
+      opts: opts, ans: opts.indexOf(snd), kp: "自然拼读"
+    };
+  }
+
   // 注册到题库（供英语测试随机抽题，与真题融合）
   App.Banks.register("english", {
     gens: [
@@ -133,13 +169,16 @@
           var others = U.shuffled(VOCAB.filter(function (x) { return x.en !== v.en; })).slice(0, 2).map(function (x) { return x.en; });
           var opts = U.shuffled([v.en].concat(others));
           return { type: "choice", q: "选出正确的单词：" + v.zh, opts: opts, ans: opts.indexOf(v.en), speak: v.en, kp: "单词" };
-        }, weight: 1 }
+        }, weight: 1 },
+      { gen: readingQuiz, weight: 2 },
+      { gen: phonicsQuiz, weight: 2 }
     ]
   });
 
   App.EnglishZone = {
     LETTERS: LETTERS, VOCAB: VOCAB, CVC: CVC, SENTENCES: SENTENCES,
     CLOZE: CLOZE, LISTEN: LISTEN, RECITE: RECITE, TIPS: TIPS,
-    cvcQuiz: cvcQuiz, sentenceQuiz: sentenceQuiz, clozeQuiz: clozeQuiz, listenQuiz: listenQuiz
+    cvcQuiz: cvcQuiz, sentenceQuiz: sentenceQuiz, clozeQuiz: clozeQuiz, listenQuiz: listenQuiz,
+    readingQuiz: readingQuiz, phonicsQuiz: phonicsQuiz
   };
 })(window);

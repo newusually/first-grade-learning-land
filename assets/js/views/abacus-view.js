@@ -40,6 +40,7 @@
       '<button class="btn" @click="replay">🔄 重播</button>',
       '<button class="btn spk" :class="{on: S.voice}" @click="S.voice = !S.voice">{{S.voice ? "🔊 语音" : "🔇 静音"}}</button>',
       '<button class="btn spk" :class="{on: S.sfx}" @click="S.sfx = !S.sfx">{{S.sfx ? "🎵 音效" : "🎵 已关"}}</button>',
+      '<button class="btn spk" @click="animalSay">🐾 动物叫</button>',
       '<select class="speedsel" :value="String(S.speed)" @change="S.speed = parseFloat($event.target.value)">',
       '<option v-for="sp in speeds" :key="sp.v" :value="sp.v">{{sp.t}}</option>',
       '</select>',
@@ -48,12 +49,19 @@
       '</div>',
       '<div v-once>',
       '<div id="say"></div><div id="steps"></div><div id="topLabel"></div><div id="row"></div>',
-      '<div id="braceWrap"><svg width="220" height="20" viewBox="0 0 220 20"><path id="bracePath" d="M12,2 L12,16 Q110,26 208,16 L208,2"></path></svg></div>',
       '<div id="qlabel" class="q"></div>',
       '<div class="eqbar">',
       '<span class="e-a" id="e-a">3</span><span class="e-op" id="e-op">＋</span><span class="e-b" id="e-b">2</span><span>=</span><span class="e-ans" id="e-ans">?</span>',
       '</div>',
       '</div>',
+      '</div>',
+      '<div class="card gd-panel">',
+      '<div class="gd-head">🧮 画图小工具<span class="gd-sub">开源画图库（SVG.js + Rough.js + anime.js）驱动，点一个看它画出来</span></div>',
+      '<div class="gd-tools">',
+      '<button class="gd-btn" v-for="t in tools" :key="t.k" :class="{on: tool === t.k}" @click="doTool(t.k)">{{t.t}}</button>',
+      '</div>',
+      '<div class="gd-stage" id="gd-stage"></div>',
+      '<div class="gd-tip">💡 {{toolTip}}</div>',
       '</div>',
       '<div class="hint">加法·减法·凑十法·乘法·除法·混合，全部用可爱动画演示</div>',
       '</site-shell>'
@@ -61,7 +69,13 @@
     data: function () {
       return {
         modes: MODES, speeds: SPEEDS,
-        S: { mode: "add", a: 3, b: 2, emoIdx: 0, emo: PICKER[0], voice: true, sfx: true, speed: 1, pickerIds: PICKER }
+        S: { mode: "add", a: 3, b: 2, emoIdx: 0, emo: PICKER[0], voice: true, sfx: true, speed: 1, pickerIds: PICKER },
+        tools: [
+          { k: "seg", t: "📏 线段" }, { k: "angle", t: "📐 角" }, { k: "triangle", t: "🔺 三角形" },
+          { k: "square", t: "🟦 正方形" }, { k: "rect", t: "▭ 长方形" }, { k: "circle", t: "⭕ 圆" }
+        ],
+        tool: "seg",
+        toolTip: "尺子上的每一小格是 1 厘米，线段有两个端点。"
       };
     },
     computed: {
@@ -74,12 +88,35 @@
       this.els = { playBtn: document.getElementById("btn-play"), tPlay: document.getElementById("t-play"), steps: document.getElementById("steps"), say: document.getElementById("say") };
       this.renderPicker();
       this.clamp();
+      this.doTool("seg");
       if (App.Speech) App.Speech.speak("口算动画课堂，选一个运算，点开始！");
     },
     methods: {
+      doTool: function (k) {
+        this.tool = k;
+        var G = App.Guide, box = document.getElementById("gd-stage");
+        if (!G || !box) return;
+        var TIPS = {
+          seg: "尺子上的每一小格是 1 厘米，线段有两个端点，不能向两边伸长。",
+          angle: "从一点引出两条射线就组成角，开口大的角大，开口小的角小。",
+          triangle: "三角形有 3 条边、3 个角和 3 个顶点，像小山的形状。",
+          square: "正方形 4 条边一样长，4 个角都是直角，方方正正。",
+          rect: "长方形对边相等，也有 4 个直角，课本封面就是长方形。",
+          circle: "圆没有角，中心到边上每一处都一样远，像太阳和硬币。"
+        };
+        this.toolTip = TIPS[k] || "";
+        var NAMES = { triangle: "三角形", square: "正方形", rect: "长方形", circle: "圆", angle: "角" };
+        if (k === "seg") G.segment(box, { label: "这是一条线段 AB" });
+        else G.shape(box, k, { name: NAMES[k] || "" });
+        if (App.Speech) App.Speech.speak(this.toolTip);
+      },
       renderPicker: function () {
         var box = document.getElementById("emo");
         if (box && App.Abacus) App.Abacus.renderPicker(box, this.S, this.renderPicker);
+      },
+      animalSay: function () {
+        var ok = App.Animals && App.Animals.say(this.S.emo);
+        if (!ok && App.Speech) App.Speech.speak("这个没有叫声，换个小动物试试吧");
       },
       opSym: function () {
         return this.S.mode === "sub" ? "－" : this.S.mode === "mul" ? "×" : this.S.mode === "div" ? "÷" : "＋";
@@ -132,7 +169,8 @@
       }
     },
     watch: {
-      "S.voice": function (v) { if (!v) { try { w.speechSynthesis.cancel(); } catch (e) {} } }
+      "S.voice": function (v) { if (!v) { try { w.speechSynthesis.cancel(); } catch (e) {} } },
+      "S.emo": function (v) { if (App.Animals) App.Animals.say(v); }
     }
   };
 })(window);

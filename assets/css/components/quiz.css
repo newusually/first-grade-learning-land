@@ -134,3 +134,25 @@
 .match .mi.sel { border-color: #ff7043; background: #fff3e0; }
 .match .mi.done { border-color: #66bb6a; background: #e8f8ec; color: #2e7d32; }
 .match .mi.err { border-color: #e74c3c; background: #ffebee; }
+
+/* 英语阅读理解短文 */
+.read-passage {
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #fffde7, #fff8e1);
+  border: 2px dashed #ffcc80;
+  border-radius: 14px;
+}
+.read-passage .rp-head {
+  display: -webkit-box; display: -webkit-flex; display: flex;
+  -webkit-box-pack: justify; -webkit-justify-content: space-between; justify-content: space-between;
+  -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+  margin-bottom: 8px;
+}
+.read-passage .rp-head b { font-size: 16px; color: #e65100; }
+.read-passage .rp-text {
+  font-size: 17px; line-height: 1.8; color: #333;
+  font-family: "Comic Sans MS", "Segoe Print", cursive, sans-serif;
+  margin: 0;
+}
+.read-passage .rp-cn { font-size: 13px; color: #8d6e63; margin: 6px 0 0; }

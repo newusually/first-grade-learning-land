@@ -54,6 +54,41 @@
 .badge-pop .bp-n { display: block; font-size: 13px; font-weight: bold; color: #5a3a1e; margin-top: 2px; }
 .badge-pop .bp-d { display: block; font-size: 11px; color: #9b8a72; line-height: 1.4; margin-top: 2px; }
 
+/* 声音选择面板 */
+.voice-pop {
+  background: #fff;
+  border: 2px solid #b3e5fc;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  -webkit-box-shadow: 0 4px 14px rgba(30, 120, 180, 0.14);
+  box-shadow: 0 4px 14px rgba(30, 120, 180, 0.14);
+}
+.voice-pop .vp-title { font-size: 15px; font-weight: bold; color: #0277bd; margin-bottom: 4px; }
+.voice-pop .vp-close { float: right; cursor: pointer; color: #90a4ae; padding: 0 4px; }
+.voice-pop .vp-sub { font-size: 12px; color: #78909c; margin: 8px 0 4px; }
+.voice-pop .vlist { max-height: 210px; overflow-y: auto; }
+.voice-pop .vitem {
+  display: -webkit-box; display: -webkit-flex; display: flex;
+  -webkit-box-align: center; -webkit-align-items: center; align-items: center;
+  padding: 7px 8px; margin: 3px 0; border-radius: 10px; cursor: pointer;
+  background: #f5fbff; border: 1.5px solid #e1f0fa;
+}
+.voice-pop .vitem:hover { background: #e8f4fd; }
+.voice-pop .vitem.on { background: #fff3e0; border-color: #ffb74d; }
+.voice-pop .vradio { margin-right: 8px; font-size: 13px; }
+.voice-pop .vlabel { -webkit-box-flex: 1; -webkit-flex: 1; flex: 1; font-size: 14px; font-weight: bold; color: #37474f; }
+.voice-pop .vitem.on .vlabel { color: #e65100; }
+.voice-pop .vlang { font-size: 11px; color: #90a4ae; margin-right: 8px; }
+.voice-pop .vtry {
+  border: none; background: #0288d1; color: #fff; font-size: 12px;
+  padding: 4px 10px; border-radius: 999px; cursor: pointer;
+}
+.voice-pop .vtry:active { background: #01579b; }
+.voice-pop .vp-empty { font-size: 13px; color: #78909c; padding: 10px; text-align: center; }
+.voice-pop .vp-foot { margin-top: 8px; display: -webkit-box; display: -webkit-flex; display: flex; -webkit-box-align: center; -webkit-align-items: center; align-items: center; }
+.voice-pop .vp-tip { font-size: 11px; color: #90a4ae; margin-left: 8px; }
+
 /* 主页学习档案 */
 .home-stat { text-align: center; }
 .home-stat .hs-title { font-size: 17px; font-weight: bold; color: #f4511e; margin-bottom: 8px; }

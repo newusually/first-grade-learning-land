@@ -1,0 +1,13 @@
+/*
+ * home.js — 数据层 / 英语·家庭食物
+ * 纯 JSON 数据（人教PEP一年级起点 + 三年级起点基础词汇），JS 只负责调用。
+ * 结构：{ meta:{name, icon}, pages:[ {id, title, items:[{en,cn,ph,img}]}, ... ] }
+ */
+(function (w) {
+  "use strict";
+  var App = (w.App = w.App || {});
+  App.DATA = App.DATA || {};
+  App.DATA.english = App.DATA.english || {};
+  App.DATA.english.home =
+{"meta": {"name": "家庭·食物·身体", "icon": "🏠"}, "pages": [{"id": "family", "title": "家庭", "items": [{"en": "father", "cn": "爸爸", "ph": "/ˈfɑːðə/", "img": "👨"}, {"en": "mother", "cn": "妈妈", "ph": "/ˈmʌðə/", "img": "👩"}, {"en": "grandpa", "cn": "爷爷", "ph": "/ˈɡrænpɑː/", "img": "👴"}, {"en": "grandma", "cn": "奶奶", "ph": "/ˈɡrænmɑː/", "img": "👵"}, {"en": "brother", "cn": "兄弟", "ph": "/ˈbrʌðə/", "img": "👦"}, {"en": "sister", "cn": "姐妹", "ph": "/ˈsɪstə/", "img": "👧"}, {"en": "baby", "cn": "婴儿", "ph": "/ˈbeɪbi/", "img": "👶"}]}, {"id": "food", "title": "食物饮料", "items": [{"en": "rice", "cn": "米饭", "ph": "/raɪs/", "img": "🍚"}, {"en": "noodles", "cn": "面条", "ph": "/ˈnuːdlz/", "img": "🍜"}, {"en": "bread", "cn": "面包", "ph": "/bred/", "img": "🍞"}, {"en": "egg", "cn": "鸡蛋", "ph": "/eɡ/", "img": "🥚"}, {"en": "milk", "cn": "牛奶", "ph": "/mɪlk/", "img": "🥛"}, {"en": "water", "cn": "水", "ph": "/ˈwɔːtə/", "img": "💧"}, {"en": "juice", "cn": "果汁", "ph": "/dʒuːs/", "img": "🧃"}, {"en": "apple", "cn": "苹果", "ph": "/ˈæpl/", "img": "🍎"}]}, {"id": "fruit", "title": "水果", "items": [{"en": "banana", "cn": "香蕉", "ph": "/bəˈnɑːnə/", "img": "🍌"}, {"en": "orange", "cn": "橙子", "ph": "/ˈɒrɪndʒ/", "img": "🍊"}, {"en": "pear", "cn": "梨", "ph": "/peə/", "img": "🍐"}, {"en": "grape", "cn": "葡萄", "ph": "/ɡreɪp/", "img": "🍇"}, {"en": "peach", "cn": "桃子", "ph": "/piːtʃ/", "img": "🍑"}, {"en": "watermelon", "cn": "西瓜", "ph": "/ˈwɔːtəmelən/", "img": "🍉"}]}, {"id": "body", "title": "身体", "items": [{"en": "head", "cn": "头", "ph": "/hed/", "img": "🙂"}, {"en": "eye", "cn": "眼睛", "ph": "/aɪ/", "img": "👁️"}, {"en": "ear", "cn": "耳朵", "ph": "/ɪə/", "img": "👂"}, {"en": "nose", "cn": "鼻子", "ph": "/nəʊz/", "img": "👃"}, {"en": "mouth", "cn": "嘴", "ph": "/maʊθ/", "img": "👄"}, {"en": "hand", "cn": "手", "ph": "/hænd/", "img": "✋"}, {"en": "foot", "cn": "脚", "ph": "/fʊt/", "img": "🦶"}, {"en": "leg", "cn": "腿", "ph": "/leɡ/", "img": "🦵"}]}, {"id": "home-room", "title": "家里的房间", "items": [{"en": "home", "cn": "家", "ph": "/həʊm/", "img": "🏠"}, {"en": "bedroom", "cn": "卧室", "ph": "/ˈbedruːm/", "img": "🛏️"}, {"en": "kitchen", "cn": "厨房", "ph": "/ˈkɪtʃɪn/", "img": "🍳"}, {"en": "living room", "cn": "客厅", "ph": "/ˈlɪvɪŋ ruːm/", "img": "🛋️"}, {"en": "bathroom", "cn": "卫生间", "ph": "/ˈbɑːθruːm/", "img": "🛁"}, {"en": "study", "cn": "书房", "ph": "/ˈstʌdi/", "img": "📖"}]}]};
+})(window);

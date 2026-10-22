@@ -69,13 +69,47 @@
       '<div class="ctr"><button class="btn spk" @click="readZh(punctSay())">🔊 读整句</button>',
       '<button class="btn next" @click="newPunct">下一题 ▶</button></div>',
       '</div>',
+      '<div class="card lpanel" v-show="tab === \'essay\'">',
+      '<div class="ez-intro">✍️ 一年级作文范文库：按类别选一篇，读一读、学一学：</div>',
+      '<div class="essay-cats">',
+      '<button class="ec-chip" v-for="c in essayCats" :key="c" :class="{on: essayCat === c}" @click="essayCat = c">{{c}}</button>',
+      '</div>',
+      '<div class="essay-wrap">',
+      '<div class="essay-card" v-for="(e, i) in essayList" :key="i">',
+      '<div class="es-t">{{e.t}}<span class="es-chip">{{e.cat}}</span></div>',
+      '<div class="es-words">{{e.words}}</div>',
+      '<div class="es-good">🌟 好词：<span v-for="(g, j) in e.good" :key="j">{{g}}</span></div>',
+      '<div class="es-tip">💡 写法要点：{{e.tip}}</div>',
+      '<button class="btn spk" @click="readEssay(e)">🔊 读范文</button></div>',
+      '</div>',
+      '</div>',
+      '<div class="card lpanel" v-show="tab === \'howto\'">',
+      '<div class="ez-intro">🧭 语文学习方法：拼音、识字、阅读、写作，一步一步来：</div>',
+      '<div class="me-wrap">',
+      '<div class="me-card" v-for="(m, i) in cnMethods" :key="i">',
+      '<div class="me-t">{{m.t}}</div><div class="me-d">{{m.d}}</div>',
+      '<div class="me-steps"><span v-for="(s, j) in m.steps" :key="j">{{j+1}}. {{s}}</span></div>',
+      '<button class="btn spk" @click="readMethod(m)">🔊 听方法</button></div>',
+      '</div>',
+      '</div>',
       '</site-shell>'
     ].join(""),
     data: function () {
+      var ES = (App.DATA.chinese && App.DATA.chinese.essay) || { pages: [] };
+      var ME = (App.DATA.chinese && App.DATA.chinese.methods) || { pages: [] };
+      var essays = [];
+      (ES.pages || []).forEach(function (p) {
+        (p.items || []).forEach(function (it) { essays.push(it); });
+      });
+      var methods = [];
+      (ME.pages || []).forEach(function (p) {
+        (p.items || []).forEach(function (it) { methods.push(it); });
+      });
       return {
         tabs: [
           { k: "pic", t: "🖼️ 看图写话" }, { k: "imit", t: "📋 句子仿写" }, { k: "order", t: "🔗 连词成句" },
-          { k: "meas", t: "📏 量词搭配" }, { k: "punct", t: "❗ 标点练习" }
+          { k: "meas", t: "📏 量词搭配" }, { k: "punct", t: "❗ 标点练习" },
+          { k: "essay", t: "📚 范文库" }, { k: "howto", t: "🧭 学习方法" }
         ],
         tab: "pic",
         myText: "",
@@ -83,8 +117,18 @@
         imit: blank(WZ.imitateQuiz()),
         order: mkOrder(WZ.orderQuiz()),
         meas: blank(WZ.measureQuiz()),
-        punct: blank(WZ.punctQuiz())
+        punct: blank(WZ.punctQuiz()),
+        essays: essays,
+        essayCats: ["写人", "记事", "写景", "状物", "想象", "日记"],
+        essayCat: "写人",
+        cnMethods: methods
       };
+    },
+    computed: {
+      essayList: function () {
+        var c = this.essayCat;
+        return this.essays.filter(function (e) { return e.cat === c; });
+      }
     },
     mounted: function () {
       this.readPic();
@@ -98,6 +142,12 @@
       orderSay: function () { return this.order.q.words.join(""); },
       readPic: function () { Speech.speak("看图写话。提示词：" + this.pic.words.join("、") + "。请用这些词写一句话。"); },
       readModel: function () { Speech.speak(this.pic.t.model); },
+      readEssay: function (e) {
+        Speech.speak(e.t + "。" + String(e.words || "").split("\n").join(""), { rate: 0.85 });
+      },
+      readMethod: function (m) {
+        Speech.speak(m.t + "。" + m.d + "。" + (m.steps || []).join("，"));
+      },
       readWords: function () { Speech.speak(this.pic.words.join("、")); },
       showModel: function () {
         this.pic.fb = "范例：" + this.pic.t.model;

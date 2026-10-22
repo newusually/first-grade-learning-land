@@ -26,7 +26,11 @@
         nav: (App.config && App.config.nav) || [],
         cur: cur(),
         st: App.Store.state,
-        showBadges: false
+        showBadges: false,
+        showVoices: false,
+        voices: [],
+        vLoading: true,
+        vTry: 0
       };
     },
     computed: {
@@ -37,14 +41,48 @@
           out.push({ id: b.id, i: b.i, n: b.n, d: b.d, got: this.st.badges.indexOf(b.id) >= 0 });
         }
         return out;
-      }
+      },
+      zhVoices: function () { return this.voices.filter(function (v) { return v.kind === "zh"; }); },
+      enVoices: function () { return this.voices.filter(function (v) { return v.kind === "en"; }); },
+      curZh: function () { return this.st.voiceZh || ""; },
+      curEn: function () { return this.st.voiceEn || ""; }
     },
     methods: {
       toggleRead: function () {
         var on = App.Store.toggleAutoRead();
         if (App.Speech) App.Speech.speak(on ? "自动朗读已打开" : "自动朗读已关闭");
       },
-      goHome: function () { w.location.href = "主页.html"; }
+      goHome: function () { w.location.href = "主页.html"; },
+      openVoices: function () {
+        this.showVoices = true;
+        this.showBadges = false;
+        this.refreshVoices();
+      },
+      refreshVoices: function () {
+        var self = this;
+        if (App.Speech) App.Speech.pickVoice();
+        this.voices = (App.Speech && App.Speech.listVoices) ? App.Speech.listVoices() : [];
+        this.vLoading = !this.voices.length;
+        // 手机端语音列表异步返回：自动重试几次
+        if (this.vLoading && this.vTry < 6) {
+          this.vTry++;
+          setTimeout(function () { if (self.showVoices) self.refreshVoices(); }, 400);
+        }
+      },
+      pickV: function (v) {
+        if (App.Speech) {
+          App.Speech.setVoice(v.name, v.kind);
+          App.Speech.demoVoice(v.name, v.kind);
+        }
+      },
+      resetV: function () {
+        if (App.Speech) {
+          App.Speech.setVoice("", "zh");
+          App.Speech.setVoice("", "en");
+          App.Speech.speak("已恢复默认声音");
+        }
+        this.refreshVoices();
+      }
     },
     template: [
       '<div class="wrap">',
@@ -56,7 +94,32 @@
       '<em v-for="b in myBadges" :key="b.id" :class="{off:!b.got}">{{b.got ? b.i : "▫️"}}</em>',
       '</span>',
       '<button class="btn spk" @click="toggleRead">{{st.autoRead ? "🔊 自动朗读开" : "🔇 自动朗读关"}}</button>',
+      '<button class="btn spk" @click="openVoices" title="选择朗读声音">🎙️ 声音</button>',
       '</div>',
+      '</div>',
+      '<div class="voice-pop" v-if="showVoices">',
+      '<div class="vp-title">🎙️ 选择朗读声音 <span class="vp-close" @click="showVoices=false">✕</span></div>',
+      '<div class="vp-sub">中文声音（读拼音、读题、读课文）</div>',
+      '<div class="vlist">',
+      '<div class="vitem" v-for="v in zhVoices" :key="\'z\'+v.name" :class="{on: curZh === v.name}" @click="pickV(v)">',
+      '<span class="vradio">{{curZh === v.name ? "🔘" : "⚪"}}</span>',
+      '<span class="vlabel">{{v.label}}</span>',
+      '<span class="vlang">{{v.lang}}</span>',
+      '<button class="vtry" @click.stop="App.Speech && App.Speech.demoVoice(v.name, v.kind)">▶ 试听</button>',
+      '</div>',
+      '</div>',
+      '<div class="vp-sub">英文声音（读英语单词和句子）</div>',
+      '<div class="vlist">',
+      '<div class="vitem" v-for="v in enVoices" :key="\'e\'+v.name" :class="{on: curEn === v.name}" @click="pickV(v)">',
+      '<span class="vradio">{{curEn === v.name ? "🔘" : "⚪"}}</span>',
+      '<span class="vlabel">{{v.label}}</span>',
+      '<span class="vlang">{{v.lang}}</span>',
+      '<button class="vtry" @click.stop="App.Speech && App.Speech.demoVoice(v.name, v.kind)">▶ 试听</button>',
+      '</div>',
+      '</div>',
+      '<div class="vp-empty" v-if="vLoading">正在获取这台设备的声音列表…（手机需要等一两秒）</div>',
+      '<div class="vp-foot"><button class="btn" @click="resetV">↩️ 恢复默认</button>',
+      '<span class="vp-tip">选好点名字就能换，换完自动播放一句试听</span></div>',
       '</div>',
       '<div class="badge-pop" v-if="showBadges">',
       '<div class="bp-title">🏅 我的徽章</div>',

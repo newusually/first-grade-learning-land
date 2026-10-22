@@ -43,15 +43,19 @@
     else if (source && source.questions) pools[type].push(source);
   }
 
-  /* ---------- 收集所有题目（调用生成器 + 合并静态题） ---------- */
-  function collect(type) {
-    var out = [];
+  /* ---------- 收集所有题目（调用生成器 + 合并静态题） ----------
+   * rounds：生成器多跑几轮。生成器每次调用都重新随机，
+   * 轮数越多变体越多，保证抽题不重复、每次都不一样。 */
+  function collect(type, rounds) {
+    var out = [], r = Math.max(1, rounds || 1);
     pools[type].forEach(function (src) {
       if (src.gens) {
         src.gens.forEach(function (g) {
-          var n = g.weight || 1;
-          for (var i = 0; i < n; i++) {
-            try { var q = g.gen(); if (q) out.push(q); } catch (e) {}
+          var n = g.weight || 1, k, i;
+          for (k = 0; k < r; k++) {
+            for (i = 0; i < n; i++) {
+              try { var q = g.gen(); if (q) out.push(q); } catch (e) {}
+            }
           }
         });
       } else if (src.questions) {
@@ -78,6 +82,9 @@
   function draw(type, n, opt) {
     opt = opt || {};
     var all = collect(type);
+    // 池子不够 n 题时，生成器多跑几轮凑变体（生成器每次调用都重新随机，不会重复）
+    var guard2 = 0;
+    while (all.length < n && guard2++ < 6) all = all.concat(collect(type, 4));
     // 可按知识点过滤（针对性巩固）
     if (opt.kps && opt.kps.length) {
       var f = all.filter(function (q) { return opt.kps.indexOf(q.kp) >= 0; });
@@ -99,8 +106,12 @@
   }
   function qKey(q) {
     if (q.kind) return "p:" + q.kind + ":" + q.a + ":" + q.b + ":" + q.c + ":" + q.e + ":" + q.text;
+    if (q.word) return "w:" + q.word;                                    // 拼写题
+    if (q.say && q.opts) return "s:" + q.say;                            // 听力题
+    if (q.text && q.opts) return "c:" + q.text + ":" + q.opts.join(","); // 完形填空
+    if (q.q && q.opts) return "h:" + q.q + ":" + q.opts.join(",");       // 选择题
     if (q.tag && q.say) return "m:" + q.tag + ":" + q.say + ":" + (q.ans || "");
-    return "x:" + (q.say || q.html || Math.random());
+    return "x:" + (q.say || q.html || JSON.stringify(q));
   }
 
   /* ---------- 外部多 JSON 融合加载 ---------- */

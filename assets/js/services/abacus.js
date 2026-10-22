@@ -41,10 +41,11 @@
   };
 
   function $(id) { return document.getElementById(id); }
-  function emojiNode(id, from) {
+  function emojiNode(id, from, grp) {
     var d = document.createElement("span");
     d.className = "e" + (from === "L" ? " fromL" : from === "R" ? " fromR" : "");
     d.innerHTML = IMG.svg(id) || "⭐";
+    if (grp) { try { d.dataset.grp = grp; } catch (e) { d.setAttribute("data-grp", grp); } }
     return d;
   }
   function spacer() { var s = document.createElement("span"); s.className = "espace"; s.textContent = " "; return s; }
@@ -219,8 +220,7 @@
     if ($("qlabel")) $("qlabel").textContent = "";
     if (els0 && els0.steps) els0.steps.textContent = "";
     sizeRow(curState);
-    var path = $("bracePath");
-    if (path) { path.style.transition = "none"; path.style.strokeDasharray = 460; path.style.strokeDashoffset = 460; void path.getBoundingClientRect(); }
+    if (App.Draw) { var st = stageEl(); if (st) App.Draw.clear(st); }
     var ans = $("e-ans"); if (ans) { ans.textContent = "?"; ans.classList.remove("reveal"); }
     var op = curMode === "sub" ? ZH.minus : curMode === "mul" ? ZH.times : curMode === "div" ? ZH.div : ZH.plus;
     if ($("e-a")) $("e-a").textContent = curState.a;
@@ -230,7 +230,29 @@
   }
   var els0 = null, curState = { a: 3, b: 2 };
   function top(t) { if ($("topLabel")) $("topLabel").textContent = t; }
-  function braceShow() { var p = $("bracePath"); if (p) { p.style.transition = "stroke-dashoffset 1s ease"; p.style.strokeDashoffset = 0; } }
+  /* 大括号：先量出 #row 里该组图形的真实位置，再用画图引擎对准绘制（不再写死坐标） */
+  function stageEl() { var r = $("row"); return r ? r.parentNode : null; }
+  function groupNodes(grp) {
+    var row = $("row"), out = [], i, c;
+    if (!row) return out;
+    for (i = 0; i < row.children.length; i++) {
+      c = row.children[i];
+      if ((c.className || "").indexOf("e") < 0) continue;
+      var g = (c.dataset && c.dataset.grp) || c.getAttribute("data-grp") || "";
+      if (g === grp) out.push(c);
+    }
+    return out;
+  }
+  var _brace = { grp: "ALL", label: "", from: 0, to: -1 };
+  function braceShow() {
+    var stage = stageEl();
+    if (!stage || !App.Draw) return;
+    var nodes = groupNodes(_brace.grp);
+    if (_brace.to >= 0) nodes = nodes.slice(_brace.from, _brace.to);
+    else if (_brace.from > 0) nodes = nodes.slice(_brace.from);
+    if (!nodes.length) return;
+    App.Draw.brace(stage, nodes, { label: _brace.label, color: "#e65100", w: 3, dur: 800 });
+  }
   function reveal(v, label, sayTxt) {
     var ans = $("e-ans"); if (ans) { ans.textContent = v; ans.classList.add("reveal"); }
     if ($("qlabel")) { $("qlabel").textContent = label; $("qlabel").className = "q big"; }
@@ -308,15 +330,17 @@
     if (m === "mul") {
       for (var g = 0; g < a; g++) {
         if (g > 0) push(180, function () { if ($("row")) $("row").appendChild(spacer()); });
-        for (var i2 = 0; i2 < b; i2++) push(260, (function () { var e = emojiNode(_curEmo); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+        for (var i2 = 0; i2 < b; i2++) push(260, (function () { var e = emojiNode(_curEmo, "", "G" + g); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
       }
+      _brace = { grp: "ALL", label: a + " 个 " + b, from: 0, to: -1 };
       push(500, function () { top(a + " 个 " + b + " 合起来"); _say(ZH.mulStep(a, b)); });
       push(900, function () { braceShow(); if ($("qlabel")) { $("qlabel").textContent = ZH.q; $("qlabel").className = "q pulse"; } _say(ZH.s5()); });
       push(1400, function () { _say(ZH.s6()); });
       push(700, function () { reveal(a * b, ZH.total(a * b), ZH.s7(a, b, a * b, ZH.times)); });
     } else if (m === "div") {
       var q = Math.floor(a / b);
-      for (var k = 0; k < a; k++) push(220, (function () { var e = emojiNode(_curEmo); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+      for (var k = 0; k < a; k++) push(220, (function () { var e = emojiNode(_curEmo, "", "ALL"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+      _brace = { grp: "ALL", label: "平均分成 " + b + " 份", from: 0, to: -1 };
       push(500, function () { top("把 " + a + " 平均分成 " + b + " 份"); _say(ZH.divStep(a, b, q)); });
       push(900, function () { braceShow(); if ($("qlabel")) { $("qlabel").textContent = "每份几个？"; $("qlabel").className = "q pulse"; } });
       push(600, function () {
@@ -330,7 +354,8 @@
       push(1600, function () { reveal(q, "每份 " + q + " 个", ZH.s8(a, b, q, ZH.div)); });
     } else {
       if (m === "sub") {
-        for (var s1 = 0; s1 < a; s1++) push(420, (function () { var e = emojiNode(_curEmo, "L"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+        for (var s1 = 0; s1 < a; s1++) push(420, (function () { var e = emojiNode(_curEmo, "L", "ALL"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+        _brace = { grp: "ALL", label: "还剩 " + (a - b) + " 个", from: 0, to: a - b };
         push(520, function () { top(ZH.total(a)); _say(ZH.s2(a)); });
         push(950, function () { top(ZH.total(a) + " " + ZH.minus + " " + ZH.count(b)); });
         push(400, function () {
@@ -341,10 +366,11 @@
         });
         push(Math.max(500, b * 360 + 250), function () { _say(ZH.s4(b)); });
       } else {
-        for (var s2 = 0; s2 < a; s2++) push(420, (function () { var e = emojiNode(_curEmo, "L"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+        for (var s2 = 0; s2 < a; s2++) push(420, (function () { var e = emojiNode(_curEmo, "L", "A"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
         push(520, function () { top(ZH.count(a)); _say(ZH.s2(a)); });
         push(950, function () { top(ZH.count(a) + " " + ZH.plus + " "); });
-        for (var s3 = 0; s3 < b; s3++) push(420, (function () { var e = emojiNode(_curEmo, "R"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+        for (var s3 = 0; s3 < b; s3++) push(420, (function () { var e = emojiNode(_curEmo, "R", "B"); return function () { if ($("row")) $("row").appendChild(e); _pop(); }; })());
+        _brace = { grp: "B", label: b + " 个", from: 0, to: -1 };
         push(520, function () { top(ZH.count(a) + " " + ZH.plus + " " + ZH.count(b)); _say(ZH.s3(b)); });
       }
       push(800, function () { braceShow(); if ($("qlabel")) { $("qlabel").textContent = ZH.q; $("qlabel").className = "q pulse"; } _say(ZH.s5()); });

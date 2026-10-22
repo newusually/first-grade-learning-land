@@ -93,14 +93,62 @@
       '</div>',
       '<div class="ctr"><button class="btn spk" @click="readTipsAll">🔊 读全部妙招</button></div>',
       '</div>',
+      '<div class="card lpanel" v-show="tab === \'reading\'">',
+      '<div class="ez-intro">📖 读短文，做后面的小题（点选项作答）：</div>',
+      '<div class="read-passage">',
+      '<div class="rp-head"><b>{{rd.title}}</b>',
+      '<button class="btn spk" @click="readEn(rd.passage, 0.8)">🔊 朗读短文</button></div>',
+      '<p class="rp-text">{{rd.passage}}</p>',
+      '<p class="rp-cn" v-if="rd.cn">{{rd.cn}}</p>',
+      '</div>',
+      '<div class="qtext">{{rd.q.q}}</div>',
+      '<div class="opts"><div class="opt" v-for="(o, i) in rd.q.opts" :key="i" :class="quizCls(rd, i)" @click="answerQuiz(rd, i)">{{o}}</div></div>',
+      '<div class="gfb" :class="rd.fbCls" v-html="rd.fb"></div>',
+      '<div class="ctr"><button class="btn next" @click="newReading">下一篇 ▶</button></div>',
+      '</div>',
+      '<div class="card lpanel" v-show="tab === \'phonics\'">',
+      '<div class="ez-intro">🔤 自然拼读：字母和组合怎么读，点卡片听发音：</div>',
+      '<div class="ph-wrap">',
+      '<div class="ph-card" v-for="(p, i) in phonicsList" :key="i" @click="readPhonics(p)">',
+      '<div class="ph-t">{{p.t}}</div><div class="ph-s">{{p.s}}</div>',
+      '<div class="ph-w">{{p.w.join(" · ")}}</div></div>',
+      '</div>',
+      '</div>',
+      '<div class="card lpanel" v-show="tab === \'dict\'">',
+      '<div class="ez-intro">📖 英语词典：4600 个常用词（开源 ECDICT 数据），点单词听发音：</div>',
+      '<div class="dl-bar">',
+      '<input class="dl-search" v-model="dkw" placeholder="搜英文单词或中文意思" @keyup.enter="dictSearch">',
+      '<button class="btn spk" @click="dictSearch">🔍 搜索</button>',
+      '<button class="btn" v-if="dkw" @click="dkw = \'\'">✕ 清除</button></div>',
+      '<div class="dict-wrap">',
+      '<div class="dict-card" v-for="(d, i) in dictShow" :key="i" @click="readEn(d.en, 0.8)">',
+      '<b>{{d.en}}</b><span class="d-ph">{{d.ph}}</span><span class="d-cn">{{d.cn}}</span>',
+      '<span class="d-tag" v-if="d.g">一年级</span><span class="d-tag2" v-if="d.tag">{{d.tag}}</span></div>',
+      '</div>',
+      '<div class="hint" v-if="!dictShow.length">没有找到，换个词试试～</div>',
+      '</div>',
+      '<div class="card lpanel" v-show="tab === \'methods\'">',
+      '<div class="ez-intro">🧭 英语学习方法：兴趣、单词、拼读、听力、阅读，一步一步来：</div>',
+      '<div class="me-wrap">',
+      '<div class="me-card" v-for="(m, i) in methodsList" :key="i">',
+      '<div class="me-t">{{m.t}}</div><div class="me-d">{{m.d}}</div>',
+      '<div class="me-steps"><span v-for="(s, j) in m.steps" :key="j">{{j+1}}. {{s}}</span></div>',
+      '<button class="btn spk" @click="readMethod(m)">🔊 听方法</button></div>',
+      '</div>',
+      '</div>',
       '</site-shell>'
     ].join(""),
     data: function () {
+      var RD = (App.DATA.english && App.DATA.english.reading) || { pages: [] };
+      var PH = (App.DATA.english && App.DATA.english.phonics) || { pages: [] };
+      var ME = (App.DATA.english && App.DATA.english.methods) || { pages: [] };
+      var DC = (App.DATA.english && App.DATA.english.wordsDict) || { pages: [] };
       return {
         tabs: [
           { k: "letter", t: "🔤 字母" }, { k: "vocab", t: "📚 单词" }, { k: "cvc", t: "🧩 拼写" },
           { k: "sent", t: "💬 句子" }, { k: "cloze", t: "✏️ 填空" }, { k: "listen", t: "🎧 听力" },
-          { k: "recite", t: "📜 背诵" }, { k: "tips", t: "💡 妙招" }
+          { k: "reading", t: "📖 阅读" }, { k: "phonics", t: "🔤 拼读" }, { k: "dict", t: "📖 词典" },
+          { k: "methods", t: "🧭 方法" }, { k: "recite", t: "📜 背诵" }, { k: "tips", t: "💡 妙招" }
         ],
         tab: "letter",
         letters: EZ.LETTERS,
@@ -110,7 +158,12 @@
         cvc: mkOrder(EZ.cvcQuiz()),
         sent: mkOrder(EZ.sentenceQuiz()),
         cloze: blank(EZ.clozeQuiz()),
-        listen: blank(EZ.listenQuiz())
+        listen: blank(EZ.listenQuiz()),
+        rd: blank(rdQuiz(RD)),
+        phonicsList: flatItems(PH),
+        methodsList: flatItems(ME),
+        dictAll: flatItems(DC),
+        dkw: ""
       };
     },
     computed: {
@@ -121,6 +174,15 @@
         var q = this.cvc.q;
         if (q.img) return IMG.svg(q.img) || "";
         return '<span class="cvc-hint">' + q.word.length + " 个字母</span>";
+      },
+      dictShow: function () {
+        var kw = this.dkw.trim().toLowerCase();
+        if (!kw) {
+          return this.dictAll.filter(function (d) { return d.g; }).slice(0, 150);
+        }
+        return this.dictAll.filter(function (d) {
+          return d.en.indexOf(kw) >= 0 || (d.cn || "").indexOf(kw) >= 0;
+        }).slice(0, 100);
       }
     },
     mounted: function () {
@@ -166,6 +228,19 @@
       newSent: function () { this.sent = mkOrder(EZ.sentenceQuiz()); },
       newCloze: function () { this.cloze = blank(EZ.clozeQuiz()); },
       newListen: function () { this.listen = blank(EZ.listenQuiz()); this.playListen(); },
+      newReading: function () {
+        var RD = (App.DATA.english && App.DATA.english.reading) || { pages: [] };
+        this.rd = blank(rdQuiz(RD));
+      },
+      readPhonics: function (p) {
+        Speech.speak(p.t + "，" + p.s);
+        var self = this;
+        setTimeout(function () { Speech.speakEn(p.w.join(", "), { rate: 0.75 }); }, 900);
+      },
+      readMethod: function (m) {
+        Speech.speak(m.t + "。" + m.d + "。" + (m.steps || []).join("，"));
+      },
+      dictSearch: function () { /* v-model 已实时过滤，此按钮供触屏 */ },
       cvcPick: function (i) {
         if (this.cvc.used[i]) return;
         this.cvc.used[i] = true;
@@ -226,6 +301,24 @@
   };
 
   function blank(q) { return { q: q, done: false, picked: -1, fb: "", fbCls: "" }; }
+  function flatItems(ds) {
+    var out = [];
+    (ds.pages || []).forEach(function (p) {
+      (p.items || []).forEach(function (it) { out.push(it); });
+    });
+    return out;
+  }
+  function rdQuiz(RD) {
+    var pg = U.pick(RD.pages || []);
+    var it = pg && pg.items ? U.pick(pg.items) : null;
+    if (!it || !it.qs || !it.qs.length) return { title: "", passage: "", cn: "", q: { q: "（暂无短文）", opts: ["—", "—", "—"], ans: 0 } };
+    var q = U.pick(it.qs);
+    var opts = U.shuffled(q.opts.slice());
+    return {
+      title: it.t, passage: it.passage, cn: it.cn || "",
+      q: { q: q.q, opts: opts, ans: opts.indexOf(q.opts[q.ans]), why: q.why }
+    };
+  }
   function mkOrder(q) {
     var list = q.tiles || q.shuffled || [];
     return { q: q, used: list.map(function () { return false; }), picked: [], fb: "", fbCls: "" };

@@ -25,6 +25,12 @@
       '<button class="btn spk" @click="readQ">🔊 再听一次</button></div>',
       '<div class="card" id="card" :class="{shake: shaking}">',
       '<div class="qno" id="qno">第 {{idx+1}} 题{{q.kp ? " · " + q.kp : ""}}</div>',
+      '<div class="read-passage" v-if="q.type === \'reading\'">',
+      '<div class="rp-head"><b>{{q.title}}</b>',
+      '<button class="btn spk" @click="readEn(q.passage)">🔊 朗读短文</button></div>',
+      '<p class="rp-text">{{q.passage}}</p>',
+      '<p class="rp-cn" v-if="q.cn">{{q.cn}}</p>',
+      '</div>',
       '<div class="qtext" id="qtext">{{qText}}</div>',
       '<div class="spell-hint" v-if="q.type === \'spell\'">把字母按顺序拼成单词：<b>{{q.word}}</b></div>',
       '<div class="slots" v-if="q.type === \'spell\'">',
@@ -80,6 +86,7 @@
         var q = this.q;
         if (q.type === "listen") Speech.speakEn(q.say);
         else if (q.type === "spell") Speech.speakEn(q.word);
+        else if (q.type === "reading") Speech.speakEn(q.passage, { rate: 0.8 });
         else if (q.speak) Speech.speakEn(q.speak);
         else Speech.speakEn(q.q || q.text || "");
       },
@@ -91,7 +98,7 @@
       loadQ: function () {
         var q = this.quiz[this.idx];
         if (!q) return;
-        if (q.type === "choice" || q.type === "cloze" || q.type === "listen") {
+        if (q.type === "choice" || q.type === "cloze" || q.type === "listen" || q.type === "reading" || q.type === "phonics") {
           if (!q._raw) q._raw = { opts: q.opts.slice(), ans: q.ans };
           q.opts = U.shuffled(q._raw.opts);
           q.ans = q.opts.indexOf(q._raw.opts[q._raw.ans]);
@@ -103,6 +110,7 @@
         setTimeout(function () {
           if (q.type === "listen") Speech.speakEn(q.say);
           else if (q.type === "spell") Speech.speakEn(q.word);
+          else if (q.type === "reading") Speech.speakEn(q.passage, { rate: 0.8 });
           else if (q.speak) Speech.speakEn(q.speak);
         }, 600);
       },
@@ -160,6 +168,7 @@
           Speech.speak(U.pick(CHEER)); Banks.record(this.q.kp, false);
           this.vd = "✘ 正确答案：" + this.q.opts[this.q.ans]; this.vdCls = "verdict bad";
           if (this.q.teach) this.teach = "💡 " + this.q.teach;
+          else if (this.q.why) this.teach = "💡 " + this.q.why;
         }
       },
       next: function () {

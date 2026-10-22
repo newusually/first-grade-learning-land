@@ -111,22 +111,28 @@
       say: t.say, html: "<div style='font-size:52px;text-align:center;letter-spacing:10px;margin:14px 0'>" + t.scene + "</div><div class='hint'>👆 大声说一说，说完点「说好啦」</div>" };
   }
 
-  // 组词：给一个字，选出能组成的词
-  var ZUCI = [
-    { zi: "水", words: ["水果", "河水", "开水"], wrong: ["水车（×）", "火水", "天水"] },
-    { zi: "大", words: ["大人", "大门", "大山"], wrong: ["大水（√可）", "土大", "风大"] },
-    { zi: "木", words: ["木头", "木门", "树木"], wrong: ["木火", "水木", "风木"] },
-    { zi: "天", words: ["天空", "天气", "春天"], wrong: ["天水", "火天", "木天"] },
-    { zi: "风", words: ["大风", "风雨", "风筝"], wrong: ["风水", "木风", "土风"] },
-    { zi: "火", words: ["火苗", "火山", "火光"], wrong: ["火水", "风火", "天火（×）"] }
-  ];
+  // 组词：给一个字，选出含有这个字的词语（词典驱动：多个选项都可能正确）
+  // 词库来自 services/nlp.js（KID_WORDS 儿童词表 + 2 万常用词表），不是写死的单个答案
+  var ZUCI_ZI = ["大", "水", "天", "人", "口", "手", "日", "月", "山", "田", "火", "木", "花", "草", "鸟", "虫", "鱼", "马", "牛", "羊", "上", "下", "云", "雨", "风", "电", "书", "笔", "本", "心", "白", "红", "车", "门", "米", "果", "树", "叶", "衣", "生", "学", "校", "同", "老", "师", "家", "国", "中", "爱"];
   function qZuci() {
-    var t = U.pick(ZUCI);
-    var opts = U.shuffled(t.words.concat(t.wrong.slice(0, 1))).slice(0, 3);
-    if (opts.length < 3) opts = U.shuffled(t.words.concat(["大风", "开心", "雨水"])).slice(0, 3);
-    return { type: "choice", tag: "组词", kp: "组词", teach: "“" + t.zi + "”可以组成：" + t.words.join("、") + "。",
-      say: "用“" + t.zi + "”字组词，选出正确的一个。", html: "<div class='bigword' style='font-size:40px'>" + t.zi + " ——（ ？ ）</div><div class='hint'>👆 选出能组成的词语</div>",
-      opts: opts, ans: opts.indexOf(t.words[0]) >= 0 ? opts.indexOf(t.words[0]) : 0, speakAns: t.words[0] };
+    var zi = U.pick(ZUCI_ZI);
+    var good = (App.NLP ? App.NLP.wordsWith(zi) : []).slice(0, 4);
+    if (good.length < 2) good = ["大人", "大山", "大小", "大门"];
+    // 干扰项：别字的常用词（一定不含本字）
+    var others = [], i, k, zi2, ws;
+    var pool = U.shuffled(ZUCI_ZI.filter(function (x) { return x !== zi; })).slice(0, 6);
+    for (i = 0; i < pool.length; i++) {
+      zi2 = pool[i];
+      ws = App.NLP ? App.NLP.wordsWith(zi2) : [];
+      if (ws.length) others.push(ws[0]);
+    }
+    var bad = U.shuffled(others).slice(0, 2);
+    var opts = U.shuffled(good.concat(bad));
+    return { type: "choice", tag: "组词", kp: "组词",
+      say: "用“" + zi + "”字组词，选出含有“" + zi + "”字的词语。",
+      html: "<div class='bigword' style='font-size:40px'>" + zi + " ——（ ？ ）</div><div class='hint'>👆 选出含有“" + zi + "”的词语（可能有多个都对）</div>",
+      opts: opts, accept: good, ans: opts.indexOf(good[0]), speakAns: good[0],
+      teach: "“" + zi + "”可以组成：" + good.join("、") + " 等。" };
   }
 
   // 造句：选出哪一句最通顺
@@ -156,9 +162,10 @@
   function qLianci() {
     var t = U.pick(LIANCI);
     var shuffled = U.shuffled(t.words);
+    var rawOpts = [t.ans, t.words.slice().reverse().join("") + "。", t.words.join("") + "。"];
     return { type: "choice", tag: "连词成句", kp: "连词成句", teach: "正确的句子是：" + t.ans,
       say: "把这几个词连成一句通顺的话。", html: "<div style='font-size:22px;text-align:center;line-height:2'>把这些词排成一句话：<br><b>" + shuffled.join("　") + "</b></div>",
-      opts: U.shuffled([t.ans, t.words.slice().reverse().join("") + "。", t.words.join("") + "。"]), ans: -1, _raw: { ans: t.ans }, speakAns: t.ans };
+      opts: U.shuffled(rawOpts.slice()), ans: -1, _raw: { ans: t.ans, opts: rawOpts }, speakAns: t.ans };
   }
 
   App.Banks.register("chinese", {

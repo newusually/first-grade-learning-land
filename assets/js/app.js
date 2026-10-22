@@ -11,6 +11,7 @@
     var host = document.getElementById("app");
     if (!host) return;
     var name = host.getAttribute("data-view") || "";
+    if (App.SEO) App.SEO.apply(name);   // 动态 SEO：补齐 meta / OG / JSON-LD
     var def = (App.views && App.views[name]) || null;
     var oldKernel = /old-kernel/.test(document.documentElement.className || "");
     if (!w.Vue) {

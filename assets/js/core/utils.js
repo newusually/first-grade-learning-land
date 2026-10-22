@@ -38,9 +38,12 @@
   // 把数字高亮为 <b>
   function hlNums(text) { return String(text).replace(/(\d+)/g, "<b>$1</b>"); }
 
-  // 彩带特效：在 body 或指定容器撒 emoji
+  // 彩带特效：优先 canvas-confetti（开源库），并保留 emoji 彩带双通道
   function confetti(n, box) {
     n = n || 26;
+    if (w.confetti) {
+      try { w.confetti({ particleCount: Math.min(120, n * 2), spread: 75, origin: { x: 0.5, y: 0.62 }, disableForReducedMotion: true }); } catch (e) {}
+    }
     var es = ["🎉", "⭐", "🌟", "✨", "🎊", "🎈", "💫", "🏅"];
     var root = box || document.body;
     for (var i = 0; i < n; i++) {
@@ -57,9 +60,22 @@
     }
   }
 
+  /* ---------- 题目判定：支持多正确答案（组词等：accept 数组里任一选项都对） ---------- */
+  function isCorrect(q, i) {
+    if (!q) return false;
+    if (q.accept && q.opts) return q.accept.indexOf(q.opts[i]) >= 0;
+    return i === q.ans;
+  }
+  function ansText(q) {
+    if (!q) return "";
+    if (q.accept && q.accept.length) return q.accept.join(" 或 ");
+    return q.speakAns || (q.opts ? q.opts[q.ans] : "");
+  }
+
   App.U = {
     $: $, qs: qs, qsa: qsa,
     R: R, pick: pick, shuffled: shuffled, sample: sample,
-    esc: esc, hlNums: hlNums, confetti: confetti
+    esc: esc, hlNums: hlNums, confetti: confetti,
+    isCorrect: isCorrect, ansText: ansText
   };
 })(window);

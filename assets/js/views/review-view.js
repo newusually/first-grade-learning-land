@@ -31,7 +31,6 @@
       '</div>',
       '<div v-else>',
       '<div class="scorebar"><span class="score">⭐ 得分 {{score}}</span>',
-      '<button class="btn spk" @click="readQ">🔊 读题</button></div>',
       '<div class="card" id="card" :class="{shake: shaking}">',
       '<div class="qno">第 {{idx+1}} 题{{q.tag ? " · " + q.tag : (q.kp ? " · " + q.kp : "")}}</div>',
       '<div class="passage" v-if="q.passage" v-html="q.passage"></div>',
@@ -106,7 +105,6 @@
     },
     methods: {
       svg: function (id) { return IMG.svg(id) || "⭐"; },
-      readQ: function () { if (this.q) Speech.speak(this.q.say || this.q.text || ""); },
       renderWeak: function () {
         this.weakList = Banks.weakList();
       },
@@ -173,7 +171,7 @@
       },
       loadQ: function () {
         var q = this.quiz[this.idx];
-        if (q._raw) { q.opts = U.shuffled(q._raw.opts); q.ans = q.opts.indexOf(q._raw.ans); }
+        if (q._raw && q._raw.opts) { q.opts = U.shuffled(q._raw.opts); q.ans = q.opts.indexOf(q._raw.ans); }
         this.answered = false; this.q = q; this.answer = ""; this.eq = ""; this.vd = ""; this.vdCls = ""; this.teach = "";
         this.selL = -1; this.selR = -1; this.matched = 0;
         this.doneL = []; this.doneR = [];
@@ -192,7 +190,7 @@
       },
       optCls: function (i) {
         if (!this.answered) return {};
-        var ok = i === this.q.ans;
+        var ok = U.isCorrect(this.q, i);
         return { x: true, ok: ok, no: !ok };
       },
       pick: function (side, i) {
@@ -227,7 +225,7 @@
       doOpt: function (i) {
         if (this.answered) return;
         this.answered = true;
-        this.finish(i === this.q.ans, this.q.speakAns || (this.q.opts ? this.q.opts[this.q.ans] : ""));
+        this.finish(U.isCorrect(this.q, i), U.ansText(this.q));
       },
       doCmp: function (v) {
         if (this.answered) return;

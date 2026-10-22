@@ -19,13 +19,45 @@
       '</div>',
       '<div class="card lpanel" v-show="tab === \'write\'">',
       '<div class="pz-intro">📝 拼音写在<b>四线三格</b>里，每个字母都有自己住的地方：</div>',
+      '<div class="sxs-hero">',
+      '<svg class="hero-svg" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">',
+      '<defs>',
+      '<linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cdeffd"/><stop offset="1" stop-color="#fef6e4"/></linearGradient>',
+      '<linearGradient id="grassG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8e986"/><stop offset="1" stop-color="#8fd06a"/></linearGradient>',
+      '</defs>',
+      '<rect x="0" y="0" width="340" height="240" rx="18" fill="url(#skyG)"/>',
+      '<circle cx="48" cy="42" r="27" fill="#ffd54f" opacity=".35"/><circle cx="48" cy="42" r="17" fill="#ffd54f"/>',
+      '<g fill="#ffffff" opacity=".92"><ellipse cx="252" cy="48" rx="27" ry="13"/><ellipse cx="270" cy="42" rx="18" ry="11"/><ellipse cx="234" cy="44" rx="15" ry="9"/></g>',
+      '<g fill="#ffffff" opacity=".7"><ellipse cx="84" cy="72" rx="18" ry="9"/><ellipse cx="98" cy="68" rx="12" ry="7"/></g>',
+      '<path d="M0 202 Q60 170 120 202 T240 202 T340 198 L340 240 L0 240 Z" fill="url(#grassG)"/>',
+      '<g>',
+      '<rect x="40" y="70" width="240" height="30" fill="#fff8e1" opacity=".9"/>',
+      '<rect x="40" y="130" width="240" height="30" fill="#e8f4fd" opacity=".9"/>',
+      '<line x1="40" y1="70" x2="280" y2="70" stroke="#b08948" stroke-width="2.5" stroke-linecap="round"/>',
+      '<line x1="40" y1="100" x2="280" y2="100" stroke="#e8a33d" stroke-width="1.6" stroke-dasharray="7 5"/>',
+      '<line x1="40" y1="130" x2="280" y2="130" stroke="#e8a33d" stroke-width="1.6" stroke-dasharray="7 5"/>',
+      '<line x1="40" y1="160" x2="280" y2="160" stroke="#b08948" stroke-width="2.5" stroke-linecap="round"/>',
+      '<line x1="40" y1="70" x2="40" y2="160" stroke="#b08948" stroke-width="2.5" stroke-linecap="round"/>',
+      '<line x1="280" y1="70" x2="280" y2="160" stroke="#b08948" stroke-width="2.5" stroke-linecap="round"/>',
+      '</g>',
+      '<text class="hero-letter" :class="{writing: heroAnim}" :key="heroN" x="160" :y="heroY" text-anchor="middle" dominant-baseline="central" :font-size="heroFs" fill="#e65100" font-weight="bold" font-family="KaiTi,STKaiti,SimKai,serif">{{hero.s}}</text>',
+      '<text x="160" y="196" text-anchor="middle" font-size="13" fill="#5d4037">{{hero.pos}}｜{{hero.tip}}</text>',
+      '</svg>',
+      '<div class="hero-side">',
+      '<div class="hero-name">{{hero.s}}</div>',
+      '<div class="hero-poschip" :class="posCls(hero.pos)">{{hero.pos}}</div>',
+      '<button class="btn spk" @click="readPy(hero.s)">🔊 听读音</button>',
+      '<button class="btn" @click="shuffleWrite">🔀 换一批</button>',
+      '</div>',
+      '</div>',
       '<div class="sxs-wrap">',
-      '<div class="sxscard" v-for="(c, i) in writeCards" :key="i" @click="readPy(c.s)">',
-      '<div class="sxs"><span class="sxs-letter">{{c.s}}</span></div>',
-      '<div class="sxs-pos">{{c.pos}}</div><div class="sxs-name">{{c.s}}</div></div>',
+      '<div class="sxscard" v-for="(c, i) in writeCards" :key="c.s" :class="[posCls(c.pos), {on: hero.s === c.s}]" @click="pickWrite(c)">',
+      '<div class="sxs" :class="posCls(c.pos)"><span class="sxs-letter">{{c.s}}</span></div>',
+      '<div class="sxs-pos">{{c.pos}}</div><div class="sxs-name">{{c.s}}</div>',
+      '</div>',
       '</div>',
       '<div class="ctr"><button class="btn spk" @click="readWriteAll">🔊 按顺序读全部字母</button></div>',
-      '<div class="hint">👆 点一点字母，听一听怎么读（占格：中格/上中格/中下格/上中下格）</div>',
+      '<div class="hint">👆 点一点字母卡，大字格教你把字母写在对的地方（占格：中格 / 上中格 / 中下格 / 上中下格）</div>',
       '</div>',
       '<div class="card lpanel" v-show="tab === \'compose\'">',
       '<div class="pz-intro">🧩 一个音节 = <b>声母</b> + <b>韵母</b>（再加声调）。把它们拼起来：</div>',
@@ -82,7 +114,9 @@
           { k: "mem", t: "🧠 记忆" }, { k: "tone", t: "🎵 四声" }, { k: "fill", t: "✏️ 填字" }
         ],
         tab: "write",
-        writeCards: PZ.writeCards(),
+        writeCards: U.shuffled(PZ.writeCards()),
+        hero: { s: "b", pos: "上中格", tip: "" },
+        heroN: 0, heroAnim: true,
         memCards: PZ.memoryCards(),
         compose: blank(PZ.composeQuiz()),
         blend: blank(PZ.blendQuiz()),
@@ -92,8 +126,25 @@
     },
     mounted: function () {
       Speech.autoRead("拼音专区，先学写法，再练拼读！");
+      var first = this.writeCards[0];
+      if (first) this.hero = { s: first.s, pos: first.pos, tip: PZ.MEM[first.s] || "" };
+    },
+    computed: {
+      heroY: function () {
+        return this.hero.pos === "上中格" ? 85 : this.hero.pos === "中下格" ? 145 : 115;
+      },
+      heroFs: function () { return this.hero.pos === "上中下格" ? 68 : 58; }
     },
     methods: {
+      posCls: function (pos) {
+        return pos === "上中格" ? "p-upmid" : pos === "中下格" ? "p-middown" : pos === "上中下格" ? "p-all" : "p-mid";
+      },
+      pickWrite: function (c) {
+        this.hero = { s: c.s, pos: c.pos, tip: PZ.MEM[c.s] || "" };
+        this.heroN++; this.heroAnim = true;
+        Speech.speakPinyin(c.s, { rate: 0.7 });
+      },
+      shuffleWrite: function () { this.writeCards = U.shuffled(PZ.writeCards()); },
       readPy: function (s) { Speech.speakPinyin(s, { rate: 0.7 }); },
       readWriteAll: function () {
         Speech.seq(this.writeCards.map(function (c) { return c.s; }));

@@ -23,7 +23,7 @@
       '<div><div class="gcat">{{t.cat}}</div><div class="gtitle">{{t.title}}</div></div>',
       '<button class="btn spk" @click="read(i)">🔊 读给我听</button></div>',
       '<div class="gcast" :ref="\'cast\' + i" v-html="stageHtml(t.id)"></div>',
-      '<div class="gstory">{{t.story}}</div>',
+      '<div class="gstory" v-html="storyHtml(t)"></div>',
       '<div class="gtip"><b>✅ 好方法</b><ul><li v-for="(x, j) in t.tips" :key="j">{{x}}</li></ul></div>',
       '<div class="gquiz">',
       '<div class="qtext">{{t.quiz.q}}</div>',
@@ -41,6 +41,7 @@
       Speech.autoRead("成长小课堂，听小故事，学会保护自己、友好待人！");
     },
     methods: {
+      storyHtml: function (t) { return App.NLP ? App.NLP.annotate(t.story) : t.story; },
       stageHtml: function (id) {
         if (!App.Anim) return "";
         var cast = CAST[id] || ["kid", "cat"];

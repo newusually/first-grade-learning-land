@@ -14,7 +14,6 @@
     template: [
       '<site-shell title="数学测试卷" sub="认真读题，看图列式" icon="📝">',
       '<div class="scorebar"><span class="score">⭐ 得分 {{score}}</span>',
-      '<button class="btn spk" @click="readQ">🔊 读题</button></div>',
       '<div class="card" id="card" :class="{shake: shaking}">',
       '<div class="qno" id="qno">第 {{idx+1}} 题{{q.tag ? " · " + q.tag : ""}}</div>',
       '<div class="qtext" id="qtext" v-html="q.html"></div>',
@@ -64,7 +63,6 @@
     },
     methods: {
       svg: function (id) { return IMG.svg(id) || "⭐"; },
-      readQ: function () { if (this.q) Speech.speak(this.q.say); },
       restart: function () {
         this.score = 0; this.idx = 0; this.done = false;
         this.quiz = Banks.draw("math", App.config.counts.math || 18);

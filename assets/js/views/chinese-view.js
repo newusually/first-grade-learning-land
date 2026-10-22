@@ -14,10 +14,9 @@
     template: [
       '<site-shell title="语文测试卷" sub="拼音、字词、句子，一起闯关" icon="🔤">',
       '<div class="scorebar"><span class="score">⭐ 得分 {{score}}</span>',
-      '<button class="btn spk" @click="readQ">🔊 读题</button></div>',
       '<div class="card" id="card" :class="{shake: shaking}">',
       '<div class="qno" id="qno">第 {{idx+1}} 题{{q.tag ? " · " + q.tag : ""}}</div>',
-      '<div class="passage" v-if="q.passage" v-html="q.passage"></div>',
+      '<div class="passage" v-if="q.passage" v-html="passageHtml"></div>',
       '<div class="qtext" id="qtext" v-html="q.html"></div>',
       '<div class="match" v-if="q.type === \'match\'">',
       '<div class="col"><div class="mi" v-for="(wd, i) in q.left" :key="\'L\'+i" :class="miCls(i, \'L\')" @click="pick(\'L\', i)">{{wd}}</div></div>',
@@ -51,6 +50,11 @@
       };
     },
     computed: {
+      passageHtml: function () {
+        var t = this.q && this.q.passage;
+        if (!t) return "";
+        return App.NLP ? App.NLP.annotate(t) : t;
+      },
       stars: function () { return this.score >= (this.quiz.length * 10 * 0.9) ? "🌟🌟🌟" : this.score >= (this.quiz.length * 10 * 0.6) ? "🌟🌟" : "🌟"; }
     },
     mounted: function () {
@@ -59,7 +63,6 @@
       setTimeout(function () { if (!self.quiz.length) self.restart(); }, 1500);
     },
     methods: {
-      readQ: function () { if (this.q) Speech.speak(this.q.say); },
       restart: function () {
         this.score = 0; this.idx = 0; this.done = false;
         this.quiz = Banks.draw("chinese", App.config.counts.chinese || 16);
@@ -67,7 +70,7 @@
       },
       loadQ: function () {
         var q = this.quiz[this.idx];
-        if (q._raw) { q.opts = U.shuffled(q._raw.opts); q.ans = q.opts.indexOf(q._raw.ans); }
+        if (q._raw && q._raw.opts) { q.opts = U.shuffled(q._raw.opts); q.ans = q.opts.indexOf(q._raw.ans); }
         this.answered = false; this.q = q; this.eq = ""; this.vd = ""; this.vdCls = ""; this.teach = "";
         this.selL = -1; this.selR = -1; this.matched = 0;
         this.doneL = []; this.doneR = [];
@@ -83,7 +86,7 @@
       },
       optCls: function (i) {
         if (!this.answered) return {};
-        var ok = i === this.q.ans;
+        var ok = U.isCorrect(this.q, i);
         return { x: true, ok: ok, no: !ok };
       },
       pick: function (side, i) {
@@ -120,7 +123,7 @@
       doOpt: function (i) {
         if (this.answered) return;
         this.answered = true;
-        var ok = i === this.q.ans;
+        var ok = U.isCorrect(this.q, i);
         if (ok) {
           this.score += 10; U.confetti(); Speech.speak(U.pick(PRAISE));
           this.vd = "✔ 答对啦！+10 分"; this.vdCls = "verdict good"; Banks.record(this.q.kp, true);
@@ -130,7 +133,7 @@
           this.shaking = true; var self = this;
           setTimeout(function () { self.shaking = false; }, 500);
           Speech.speak(U.pick(CHEER)); Banks.record(this.q.kp, false);
-          this.vd = "✘ 正确答案：" + (this.q.speakAns || this.q.opts[this.q.ans]); this.vdCls = "verdict bad";
+          this.vd = "✘ 正确答案：" + U.ansText(this.q); this.vdCls = "verdict bad";
           if (this.q.teach) this.teach = this.q.teach;
         }
       },

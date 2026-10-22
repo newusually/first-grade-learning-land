@@ -70,3 +70,32 @@
 .tip-card { -webkit-box-flex: 1; -webkit-flex: 1 1 220px; flex: 1 1 220px; margin: 6px; background: #eef7ff; border: 2px solid #aed6f1; border-radius: 14px; padding: 10px 12px; }
 .tip-t { font-size: 16px; color: #1565c0; font-weight: bold; margin-bottom: 4px; }
 .tip-d { font-size: 14px; color: #5d4037; line-height: 1.6; }
+
+/* 自然拼读 / 词典 / 学习方法 */
+.ph-wrap { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin-top: 10px; }
+.ph-card {
+  width: calc(25% - 10px); box-sizing: border-box; text-align: center; cursor: pointer;
+  margin: 0 10px 10px 0; padding: 10px 6px; background: #eef4ff; border: 2px solid #c5d9f8; border-radius: 12px;
+  -webkit-transition: -webkit-transform .12s; transition: transform .12s;
+}
+.ph-card:hover { -webkit-transform: translateY(-3px); transform: translateY(-3px); border-color: #5c9ce6; }
+.ph-card .ph-t { font-size: 15px; font-weight: bold; color: #283593; }
+.ph-card .ph-s { font-size: 12px; color: #e65100; margin: 2px 0; }
+.ph-card .ph-w { font-size: 11px; color: #455a64; }
+.dict-wrap { display: -webkit-box; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin-top: 10px; }
+.dict-card {
+  width: calc(25% - 8px); box-sizing: border-box; cursor: pointer;
+  margin: 0 8px 8px 0; padding: 8px; background: #fff; border: 2px solid #e3ecf7; border-radius: 12px;
+}
+.dict-card:hover { border-color: #64b5f6; background: #f5faff; }
+.dict-card b { display: block; font-size: 15px; color: #1565c0; }
+.dict-card .d-ph { display: block; font-size: 11px; color: #90a4ae; }
+.dict-card .d-cn { display: block; font-size: 12px; color: #5d4037; line-height: 1.4; }
+.dict-card .d-tag, .dict-card .d-tag2 {
+  display: inline-block; font-size: 10px; border-radius: 8px; padding: 0 6px; margin-top: 3px;
+}
+.dict-card .d-tag { background: #fff3e0; color: #e65100; }
+.dict-card .d-tag2 { background: #e8f5e9; color: #2e7d32; margin-left: 4px; }
+@media screen and (max-width: 640px) {
+  .ph-card, .dict-card { width: calc(50% - 5px); }
+}
