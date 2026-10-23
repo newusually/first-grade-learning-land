@@ -439,27 +439,67 @@
   // 移动端（QQ/微信/钉钉 X5 内核）解锁媒体播放用：一段极短静音 WAV，首次手势里 play() 一下即可解锁 <audio> 自动播放
   var SILENT_WAV = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
-  // 播放预生成 MP3（来自 GitHub Pages 同源文件，无需本机语音包，音色稳定）
-  // cb(true)=播完/成功；cb(false)=被自动播放策略拦截或加载失败（调用方应回退语音合成）
-  var AE = null, mp3Done = null;
+  // 播放预生成 MP3（同源文件，无需本机语音包，台湾女声 HsiaoChen）
+  // 移动端（QQ/微信 X5 内核）的坑：<audio>.play() 必须在「用户手势内」且音频已加载完才放行，
+  // 远程 MP3 加载完时早已脱离手势，常被静默拦截 → 全站没声音。治本办法是 WebAudio：
+  //   fetch(MP3) → decodeAudioData → AudioBufferSourceNode.start()
+  // 只要 AudioContext 在首次手势里被 resume 过一次，之后任何时刻 start() 都不再受自动播放策略限制。
+  // cb(true)=成功；cb(false)=失败（调用方应回退语音合成 / <audio> 兜底）。
+  var AE = null, mp3Done = null, audioCache = {};
   function audioEl() { if (!AE) { try { AE = new Audio(); } catch (e) { AE = null; } } return AE; }
-  function playMp3(url, cb) {
-    var a = audioEl();
-    if (!a) { if (cb) cb(false); return; }
-    var reported = false, ended = false;
-    function done(success) {
-      if (reported) return; reported = true; mp3Done = null;
-      try { a.onended = null; a.onerror = null; } catch (e) {}
-      if (cb) cb(success);
+  function playMp3Web(url, cb) {
+    var ctx = ac();                       // 复用全局单例 AudioContext（首次手势里已 resume 解锁）
+    if (!ctx) { cb(false); return; }
+    if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} }
+    function start(buf) {
+      try {
+        var src = ctx.createBufferSource();
+        src.buffer = buf; src.connect(ctx.destination);
+        var done = false;
+        src.onended = function () { if (!done) { done = true; cb(true); } };
+        src.start(0);
+      } catch (e) { cb(false); }
     }
-    mp3Done = done;
-    a.onended = function () { ended = true; done(true); };
-    a.onerror = function () { done(false); };
+    var c = audioCache[url];
+    if (c && c.buffer) { start(c.buffer); return; }              // 已解码 → 直接播（最快）
+    if (c && c.state === "loading") { c.waiters.push(start); return; }
+    audioCache[url] = { state: "loading", buffer: null, waiters: [start] };
     try {
-      a.src = url;
-      var p = a.play();
-      if (p && p.catch) p.catch(function () { done(false); });   // 自动播放被拦截 → 报告失败，由 runJob 回退
-    } catch (e) { done(false); }
+      fetch(url).then(function (r) {
+        if (!r.ok) { audioCache[url].state = "error"; cb(false); return null; }
+        return r.arrayBuffer();
+      }).then(function (ab) {
+        if (!ab) return;
+        ctx.decodeAudioData(ab, function (buf) {
+          var it = audioCache[url];
+          it.buffer = buf; it.state = "ready";
+          it.waiters.forEach(function (fn) { try { fn(buf); } catch (e2) {} });
+          it.waiters = [];
+        }, function () { audioCache[url].state = "error"; cb(false); });
+      }).catch(function () { audioCache[url].state = "error"; cb(false); });
+    } catch (e) { audioCache[url].state = "error"; cb(false); }
+  }
+  function playMp3(url, cb) {
+    // 优先 WebAudio（移动端最稳，绕开自动播放限制）；不可用再回退 <audio>
+    playMp3Web(url, function (ok) {
+      if (ok) { if (cb) cb(true); return; }
+      var a = audioEl();
+      if (!a) { if (cb) cb(false); return; }
+      var reported = false;
+      function done(success) {
+        if (reported) return; reported = true; mp3Done = null;
+        try { a.onended = null; a.onerror = null; } catch (e) {}
+        if (cb) cb(success);
+      }
+      mp3Done = done;
+      a.onended = function () { done(true); };
+      a.onerror = function () { done(false); };
+      try {
+        a.src = url;
+        var p = a.play();
+        if (p && p.catch) p.catch(function () { done(false); });
+      } catch (e) { done(false); }
+    });
   }
 
   function push(job) {
