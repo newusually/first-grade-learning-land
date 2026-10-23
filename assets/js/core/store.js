@@ -10,7 +10,7 @@
   // 中文默认嗓音：Microsoft HsiaoChen Online (Natural) - Chinese (Taiwan)
   // （设备上没有这个嗓音时，speech.js 会自动回退到同类型的在线嗓音/本机嗓音）
   var DEFAULT_VOICE_ZH = "Microsoft HsiaoChen Online (Natural) - Chinese (Taiwan)";
-  var def = { autoRead: true, stars: 0, badges: [], learned: {}, visits: 0, lastVisit: "", voiceZh: DEFAULT_VOICE_ZH, voiceEn: "", voiceCloud: "", voiceStyle: "" };
+  var def = { autoRead: true, stars: 0, badges: [], learned: {}, visits: 0, lastVisit: "", voiceZh: DEFAULT_VOICE_ZH, voiceEn: "", voiceCloud: "", voiceStyle: "", voicePinned: false };
 
   function read() {
     try {
@@ -78,7 +78,10 @@
     markLearned: markLearned,
     countLearned: countLearned,
     toggleAutoRead: toggleAutoRead,
-    reset: reset
+    reset: reset,
+    // 用户是否在「声音面板」里手动选过嗓音。手动选过 → 严格用他选的；
+    // 没选过（默认）→ 按默认清单（HsiaoChen 台湾优先）自动挑，可自动从被污染的存档里恢复。
+    setVoicePinned: function (v) { state.voicePinned = !!v; save(); }
   };
   unlock("first");
 })(window);

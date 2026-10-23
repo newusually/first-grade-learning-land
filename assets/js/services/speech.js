@@ -62,28 +62,31 @@
     return f || null;
   }
   function defaultZh(zs) {
-    var loc = zs.filter(function (x) { return x.localService === true; });
-    var v = loc.length ? pickFrom(loc, ZH_DEFAULT, ZH_DEFAULT_RE, ZH_FAVOR) : null;
+    // 1) 默认清单（HsiaoChen 台湾在最前）优先，从【完整列表】里直接找。
+    //    HsiaoChen 是 Online（云端合成）嗓音，localService=false，但用户就是要它，
+    //    本机装了就一定能播出来；万一播不出，看门狗会自动转联网发音兜底，
+    //    所以绝不能因为 localService!==true 就把它排掉（之前那一版就是这么排掉的）。
+    var v = pickFrom(zs, ZH_DEFAULT, ZH_DEFAULT_RE, ZH_FAVOR);
     if (v) return v;
-    v = pickFrom(zs, ZH_DEFAULT, ZH_DEFAULT_RE, ZH_FAVOR);
-    return v || zs[0] || null;
+    // 2) 默认清单这台设备真没有（比如没装 HsiaoChen）→ 退而求其次挑「离线嗓音」（断网也响），
+    //    再不行就用列表里任意一个中文嗓音。
+    var loc = zs.filter(function (x) { return x.localService === true; });
+    var f = (loc.length ? pickFrom(loc, [], [], ZH_FAVOR) : null) || zs[0] || null;
+    return f;
   }
   function pickVoice() {
     if (!("speechSynthesis" in w)) return;
+    var pinned = !!(App.Store && App.Store.state && App.Store.state.voicePinned);
     var want = (App.Store && App.Store.state && App.Store.state.voiceZh) || "";
     try {
       var zs = zhList();
       var fav = zs.filter(function (v) { return ZH_FAVOR.test(v.name); })[0] || null;
       var hit = want ? byName(zs, want) : null;
-      if (want && hit) { voice = hit; }
-      else if (want) {
-        // 保存的嗓音这台设备没有（或就是默认嗓音没装）：回退，并把真实嗓音写回 Store
-        voice = defaultZh(zs) || fav || zs[0] || null;
-        if (voice && want === ZH_DEFAULT[0] && App.Store && App.Store.state) {
-          try { App.Store.state.voiceZh = voice.name; App.Store.save(); } catch (e1) {}
-        }
+      if (pinned && want && hit) {
+        voice = hit;                       // 用户在声音面板手动选过 → 严格用他选的，不覆盖
       } else {
-        // 没手动选过：用默认嗓音（HsiaoChen 优先），并写回 Store 让面板显示它
+        // 没手动选过（或存档被旧版污染成了别的嗓音）→ 用默认清单（HsiaoChen 台湾优先），
+        // 并把真实嗓音写回 Store，让面板显示正确；这样能从被污染的存档自动恢复。
         voice = defaultZh(zs) || fav || zs[0] || null;
         if (voice && App.Store && App.Store.state) {
           try { App.Store.state.voiceZh = voice.name; App.Store.save(); } catch (e1) {}
@@ -91,7 +94,7 @@
       }
       var es = enList();
       var wantEn = (App.Store && App.Store.state && App.Store.state.voiceEn) || "";
-      enVoice = wantEn ? (es.filter(function (v) { return v.name === wantEn; })[0] || es[0] || null) : (es[0] || null);
+      enVoice = wantEn ? (es.filter(function (v) { return v.name === wantEn; })[0] || null) : (es[0] || null);
     } catch (e) { voice = null; enVoice = null; }
     pump();
   }
@@ -428,7 +431,27 @@
   var localFail = 0, localDead = false, cloudFail = 0, cloudOK = false;
   var CA = null;
 
+  // 预生成音频清单：文本 → 相对路径（由 assets/audio/manifest.js 注入 window.__AUDIO_MANIFEST__）
+  var MANIFEST = (w.__AUDIO_MANIFEST__) || null;
+
   function cloudAudio() { if (!CA) { try { CA = new Audio(); } catch (e) { CA = null; } } return CA; }
+
+  // 播放预生成 MP3（来自 GitHub Pages 同源文件，无需本机语音包，音色稳定）
+  var AE = null;
+  function audioEl() { if (!AE) { try { AE = new Audio(); } catch (e) { AE = null; } } return AE; }
+  function playMp3(url, fin) {
+    var a = audioEl();
+    if (!a) { fin(); return; }
+    var done = false;
+    function end() { if (done) return; done = true; a.onended = null; a.onerror = null; fin(); }
+    a.onended = end;
+    a.onerror = end;
+    try {
+      a.src = url;
+      var p = a.play();
+      if (p && p.catch) p.catch(function () { end(); });   // 自动播放被拦截 → 退回合成
+    } catch (e) { end(); }
+  }
 
   function push(job) {
     if (!job || (job.t == null && !job.fn)) return;
@@ -485,6 +508,8 @@
     if (job.fn) { try { job.fn(fin); } catch (e0) { fin(); } return; }
     var txt = String(job.t == null ? "" : job.t).replace(/<[^>]+>/g, "").trim();
     if (!txt) { fin(); return; }
+    // 预生成音频优先：若这句有现成 MP3，直接放（音色稳定、不依赖本机语音包）；没有再走合成
+    if (!job.local && MANIFEST && MANIFEST[txt]) { playMp3(MANIFEST[txt], fin); return; }
     var cv = job.local ? null : (job.cloudId ? cloudGet(job.cloudId) : currentCloud());
     if (cv && ((job.en && cv.tl === "en") || (!job.en && cv.tl !== "en"))) { cloudSeq(txt, cv, fin); return; }
     // 本机语音叫不醒/根本没有 → 直接联网发音，不等失败
@@ -707,6 +732,7 @@
     Q = [];
     try { if ("speechSynthesis" in w) w.speechSynthesis.cancel(); } catch (e) {}
     try { if (CA) CA.pause(); } catch (e2) {}
+    try { if (AE) { AE.pause(); AE.onended = null; AE.onerror = null; } } catch (e3) {}
     gate = nowMs() + 200;
     stopCloud();
   }

@@ -180,6 +180,7 @@
       },
       resetV: function () {
         this.draft = { zh: "", en: "", cloud: "", style: "" };
+        if (App.Store) App.Store.setVoicePinned(false);   // 取消手动选择 → 回到默认（HsiaoChen 台湾）
         if (App.Speech) App.Speech.speak("已恢复默认声音，记得点保存");
         this.refreshVoices();
       },
@@ -193,6 +194,7 @@
           App.Speech.stop();
           App.Speech.speak("声音已保存，全部页面都用这个声音啦");
         }
+        if (App.Store) App.Store.setVoicePinned(true);    // 用户手动选过 → 严格保留他的选择
         this.showVoices = false;
       },
       cancelV: function () {
