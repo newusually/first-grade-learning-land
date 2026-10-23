@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>语音测试页 · 一年级学习乐园</title>
+<style>
+  body{font-family:-apple-system,system-ui,"Microsoft YaHei",sans-serif;margin:0;padding:16px;background:#f4f8ff;color:#234}
+  h1{font-size:20px;margin:4px 0 12px}
+  .box{background:#fff;border-radius:14px;padding:14px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  button{font-size:18px;padding:14px 18px;margin:6px 4px;border:0;border-radius:12px;background:#4f8cff;color:#fff;cursor:pointer}
+  button.sec{background:#ffd54f;color:#333}
+  #status{padding:10px;border-radius:10px;background:#eef;font-size:14px;min-height:20px;line-height:1.5}
+  input{width:92%;font-size:16px;padding:10px;border:1px solid #ccd;border-radius:10px;box-sizing:border-box}
+</style>
+</head>
+<body>
+<h1>🔊 语音测试页（手机专用）</h1>
+<div class="box"><div id="status">正在加载语音清单…</div></div>
+<div class="box">
+  <p>① 点这里，测试台湾女声（预生成 MP3）：</p>
+  <button id="play1">▶ 播放第一句朗读</button>
+  <button id="play2" class="sec">▶ 再放一句</button>
+</div>
+<div class="box">
+  <p>② 输入页面里出现的任意一句朗读文字，点播放：</p>
+  <input id="txt" placeholder="例如：下列哪个字的读音不唯一？"><br>
+  <button id="play3">▶ 播放我输入的</button>
+</div>
+<div class="box">
+  <p>③ 本机语音合成测试（手机不支持时会自动跳过）：</p>
+  <button id="synth">▶ 用手机自带语音念一句</button>
+</div>
+<script src="assets/audio/manifest.js"></script>
+<script>
+  var M = window.__AUDIO_MANIFEST__ || {};
+  var keys = Object.keys(M);
+  var st = document.getElementById('status');
+  if (keys.length) {
+    st.innerHTML = '✅ 已加载 <b>'+keys.length+'</b> 条预生成朗读音频（台湾女声 HsiaoChen）。<br>如果点击没声音：先<b>点一下页面任意处</b>解锁声音，并确认手机没静音、QQ 浏览器允许声音。';
+  } else {
+    st.innerHTML = '⚠️ 没找到预生成音频清单，请确认本页与 assets/audio/manifest.js 在同一站点下打开。';
+  }
+  function play(url, label){
+    var a = new Audio();
+    a.src = url;
+    st.innerHTML = '▶ 正在播放：' + label;
+    var p = a.play();
+    if (p && p.catch) p.catch(function(){ st.innerHTML = '❌ 播放被拦截：请先点一下页面任意处解锁声音，再试一次。'; });
+    a.onended = function(){ st.innerHTML = '✅ 播放完成：' + label; };
+    a.onerror = function(){ st.innerHTML = '❌ 音频加载失败：' + label; };
+  }
+  function pick(i){ return keys[(i||0) % keys.length]; }
+  document.getElementById('play1').onclick = function(){ var k=pick(0); play(M[k], k); };
+  document.getElementById('play2').onclick = function(){ var k=pick(7); play(M[k], k); };
+  document.getElementById('play3').onclick = function(){
+    var v = document.getElementById('txt').value.trim();
+    if (!v){ st.innerHTML='请先输入一句朗读文字'; return; }
+    if (M[v]){ play(M[v], v); }
+    else { st.innerHTML='这句不在预生成清单里（找不到对应 MP3）。'; }
+  };
+  document.getElementById('synth').onclick = function(){
+    if (!('speechSynthesis' in window)){ st.innerHTML='此浏览器不支持本机语音合成'; return; }
+    try {
+      var u = new SpeechSynthesisUtterance('你好，我是你的朗读小老师。');
+      u.lang='zh-CN'; u.rate=0.95;
+      window.speechSynthesis.speak(u);
+      st.innerHTML='▶ 已调用本机语音合成（部分手机浏览器不支持会无声）';
+    } catch(e){ st.innerHTML='本机语音合成出错：'+e.message; }
+  };
+</script>
+</body>
+</html>
