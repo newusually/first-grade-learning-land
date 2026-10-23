@@ -436,21 +436,30 @@
 
   function cloudAudio() { if (!CA) { try { CA = new Audio(); } catch (e) { CA = null; } } return CA; }
 
+  // 移动端（QQ/微信/钉钉 X5 内核）解锁媒体播放用：一段极短静音 WAV，首次手势里 play() 一下即可解锁 <audio> 自动播放
+  var SILENT_WAV = "data:audio/wav;base64,UklGRrQBAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YZABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
   // 播放预生成 MP3（来自 GitHub Pages 同源文件，无需本机语音包，音色稳定）
-  var AE = null;
+  // cb(true)=播完/成功；cb(false)=被自动播放策略拦截或加载失败（调用方应回退语音合成）
+  var AE = null, mp3Done = null;
   function audioEl() { if (!AE) { try { AE = new Audio(); } catch (e) { AE = null; } } return AE; }
-  function playMp3(url, fin) {
+  function playMp3(url, cb) {
     var a = audioEl();
-    if (!a) { fin(); return; }
-    var done = false;
-    function end() { if (done) return; done = true; a.onended = null; a.onerror = null; fin(); }
-    a.onended = end;
-    a.onerror = end;
+    if (!a) { if (cb) cb(false); return; }
+    var reported = false, ended = false;
+    function done(success) {
+      if (reported) return; reported = true; mp3Done = null;
+      try { a.onended = null; a.onerror = null; } catch (e) {}
+      if (cb) cb(success);
+    }
+    mp3Done = done;
+    a.onended = function () { ended = true; done(true); };
+    a.onerror = function () { done(false); };
     try {
       a.src = url;
       var p = a.play();
-      if (p && p.catch) p.catch(function () { end(); });   // 自动播放被拦截 → 退回合成
-    } catch (e) { end(); }
+      if (p && p.catch) p.catch(function () { done(false); });   // 自动播放被拦截 → 报告失败，由 runJob 回退
+    } catch (e) { done(false); }
   }
 
   function push(job) {
@@ -508,8 +517,20 @@
     if (job.fn) { try { job.fn(fin); } catch (e0) { fin(); } return; }
     var txt = String(job.t == null ? "" : job.t).replace(/<[^>]+>/g, "").trim();
     if (!txt) { fin(); return; }
-    // 预生成音频优先：若这句有现成 MP3，直接放（音色稳定、不依赖本机语音包）；没有再走合成
-    if (!job.local && MANIFEST && MANIFEST[txt]) { playMp3(MANIFEST[txt], fin); return; }
+    // 预生成音频优先：若这句有现成 MP3，直接放（音色稳定、不依赖本机语音包）
+    if (!job.local && MANIFEST && MANIFEST[txt]) {
+      playMp3(MANIFEST[txt], function (ok) {
+        if (ok) { fin(); return; }            // 成功播完
+        synthPath(job, fin);                  // 被手机自动播放拦截 → 回退语音合成/云端
+      });
+      return;
+    }
+    synthPath(job, fin);
+  }
+  // 走语音合成/云端发音的链路（本机 → 看门狗 → 联网兜底）
+  function synthPath(job, fin) {
+    var txt = String(job.t == null ? "" : job.t).replace(/<[^>]+>/g, "").trim();
+    if (!txt) { fin(); return; }
     var cv = job.local ? null : (job.cloudId ? cloudGet(job.cloudId) : currentCloud());
     if (cv && ((job.en && cv.tl === "en") || (!job.en && cv.tl !== "en"))) { cloudSeq(txt, cv, fin); return; }
     // 本机语音叫不醒/根本没有 → 直接联网发音，不等失败
@@ -694,19 +715,34 @@
     if (!AC) { try { AC = new (w.AudioContext || w.webkitAudioContext)(); } catch (e) { AC = null; } }
     return AC;
   }
-  // 移动端（微信/QQ/钉钉）需用户手势后才能出声：首次触摸/点击/按键解锁并补读待读队列
+  // 移动端（微信/QQ/钉钉 X5 内核）自动播放限制极严：<audio>.play() 必须发生在「用户手势」里，
+  // 且首次播放前必须先用一次手势真正 play() 过（哪怕静音）才能解锁媒体引擎。这里用捕获阶段监听，
+  // 保证在任何业务点击之前先完成解锁；解锁后立刻补读待读队列。
   (function unlock() {
+    var done = false;
     function fn() {
-      unlocked = true;                 // 浏览器允许自动播放了，联网发音可以出声
-      flushAll();
+      if (done) return;
+      done = true;
+      unlocked = true;                 // 标记已解锁：pump 不再拦截
+      // 1) 解锁 WebAudio（音效）
       var c = ac(); if (c && c.state === "suspended") { try { c.resume(); } catch (e) {} }
+      // 2) 关键：用一段静音真正 play() 一次，解锁 <audio> 媒体引擎（否则手机端 play() 会被静默拦截）
+      try {
+        var s = new Audio();
+        s.src = SILENT_WAV;
+        var pr = s.play();
+        if (pr && pr.catch) pr.catch(function () {});
+      } catch (e) {}
+      flushAll();                      // 解锁后补读队列里积压的朗读
+      ["touchstart", "pointerdown", "mousedown", "click", "keydown"].forEach(function (ev) {
+        try { w.document.removeEventListener(ev, fn, true); } catch (e1) {}
+        try { w.document.removeEventListener(ev, fn, false); } catch (e2) {}
+      });
     }
-    w.document.addEventListener("touchstart", fn, { passive: true });
-    w.document.addEventListener("pointerdown", fn);
-    w.document.addEventListener("click", fn);
-    w.document.addEventListener("keydown", fn);
-    setTimeout(flushAll, 800);
-    setTimeout(flushAll, 2500);
+    // 捕获阶段：在按钮自身的 click 处理之前先解锁，确保同一手势内后续 play() 已解锁
+    ["touchstart", "pointerdown", "mousedown", "click", "keydown"].forEach(function (ev) {
+      w.document.addEventListener(ev, fn, true);
+    });
   })();
 
   function tone(freq, dur, type, vol) {
@@ -730,11 +766,13 @@
   // 真正要打断时才 cancel：cancel 后留 200ms 静默期，避免下一条被吞
   function stopAll() {
     Q = [];
+    try { if (mp3Done) { var d = mp3Done; mp3Done = null; d(true); } } catch (e0) {}
     try { if ("speechSynthesis" in w) w.speechSynthesis.cancel(); } catch (e) {}
     try { if (CA) CA.pause(); } catch (e2) {}
     try { if (AE) { AE.pause(); AE.onended = null; AE.onerror = null; } } catch (e3) {}
     gate = nowMs() + 200;
     stopCloud();
+    busy = false;   // 确保队列不会因中断卡死
   }
   function speaking() { return busy || Q.length > 0; }
 
